@@ -34,6 +34,12 @@ func testGetDeclarationPhaseGame(t *testing.T) *GameState {
 	return g
 }
 
+func testGetPlayingPhaseGame(t *testing.T, gameType GameType) *GameState {
+	g := testGetDeclarationPhaseGame(t)
+	assert.Nil(t, g.Declare(PlayerInitialMiddlehand, gameType, NoGameModifiers, nil))
+	return g
+}
+
 func TestGameStateInitialPhase(t *testing.T) {
 	t.Run("rejects dealing without all seeds", func(t *testing.T) {
 		g := testGetInitPhaseGame(t)
@@ -105,6 +111,12 @@ func TestGameStateBiddingPhase(t *testing.T) {
 		assert.Equal(t, ErrWrongPhase, g.SetServerSeed([]byte{}))
 	})
 
+	t.Run("reject declare", func(t *testing.T) {
+		g := testGetBiddingPhaseGame(t)
+
+		assert.Equal(t, ErrWrongPhase, g.Declare(PlayerInitialMiddlehand, GameTypeBells, NoGameModifiers, []Card{}))
+	})
+
 	t.Run("transition to declaration phase when bidding is concluded", func(t *testing.T) {
 		g := testGetBiddingPhaseGame(t)
 
@@ -131,7 +143,7 @@ func TestGameStateDeclarationPhase(t *testing.T) {
 	t.Run("initially has Hand modifier", func(t *testing.T) {
 		g := testGetDeclarationPhaseGame(t)
 
-		assert.Equal(t, GameModifierHand, g.GetStateModifiers())
+		assert.True(t, g.Modifiers().Test(GameModifierHand))
 	})
 
 	t.Run("taking skat transfers to hand of declarer", func(t *testing.T) {
@@ -150,50 +162,92 @@ func TestGameStateDeclarationPhase(t *testing.T) {
 		g := testGetDeclarationPhaseGame(t)
 
 		assert.Nil(t, g.TakeSkat(PlayerInitialMiddlehand))
-		assert.Equal(t, NoGameModifiers, g.GetStateModifiers())
+		assert.False(t, g.Modifiers().Test(GameModifierHand))
 	})
 
-	t.Run("reject push cards if skat not taken", func(t *testing.T) {
+	t.Run("reject declare without push while skat is on hand", func(t *testing.T) {
 		g := testGetDeclarationPhaseGame(t)
 
-		assert.Equal(t, ErrWrongPhase, g.PushCards(PlayerInitialMiddlehand, Card{}, Card{}))
+		assert.Nil(t, g.TakeSkat(PlayerInitialMiddlehand))
+		assert.Equal(t, ErrInvalidPush, g.Declare(PlayerInitialMiddlehand, GameTypeHearts, NoGameModifiers, []Card{}))
 	})
 
-	t.Run("reject push cards by non-declarer", func(t *testing.T) {
+	t.Run("reject declare from non-declarer", func(t *testing.T) {
 		g := testGetDeclarationPhaseGame(t)
 
-		assert.Equal(t, ErrNotYourTurn, g.PushCards(PlayerInitialForehand, Card{}, Card{}))
-		assert.Equal(t, ErrNotYourTurn, g.PushCards(PlayerInitialRearhand, Card{}, Card{}))
+		assert.Nil(t, g.TakeSkat(PlayerInitialMiddlehand))
+		assert.Equal(t, ErrNotYourTurn, g.Declare(PlayerInitialForehand, GameTypeHearts, NoGameModifiers, []Card{}))
 	})
 
-	t.Run("allow pushing the skat", func(t *testing.T) {
+	t.Run("reject declare with non-announcable states", func(t *testing.T) {
+		g := testGetDeclarationPhaseGame(t)
+		skat := g.GetSkat()
+
+		assert.Nil(t, g.TakeSkat(PlayerInitialMiddlehand))
+		assert.Equal(t, ErrInvalidGame, g.Declare(PlayerInitialMiddlehand, GameTypeHearts, GameModifierSchwarz, []Card{skat[0], skat[1]}))
+	})
+
+	t.Run("reject declare with invalid states for game type", func(t *testing.T) {
+		g := testGetDeclarationPhaseGame(t)
+		skat := g.GetSkat()
+
+		assert.Nil(t, g.TakeSkat(PlayerInitialMiddlehand))
+		assert.Equal(t, ErrInvalidGame, g.Declare(PlayerInitialMiddlehand, GameTypeNull, GameModifierSchwarzAnnounced.Normalized(), []Card{skat[0], skat[1]}))
+	})
+
+	t.Run("declare with valid game type transitions to playing phase", func(t *testing.T) {
+		g := testGetDeclarationPhaseGame(t)
+
+		assert.Nil(t, g.Declare(PlayerInitialMiddlehand, GameTypeHearts, NoGameModifiers, nil))
+		assert.Equal(t, PhasePlaying, g.Phase())
+	})
+
+	t.Run("declare with valid game type and push processes push", func(t *testing.T) {
 		g := testGetDeclarationPhaseGame(t)
 		skat := g.GetSkat()
 		handBefore := g.GetHand(PlayerInitialMiddlehand)
 
 		assert.Nil(t, g.TakeSkat(PlayerInitialMiddlehand))
-		assert.Nil(t, g.PushCards(PlayerInitialMiddlehand, skat[0], skat[1]))
+		assert.Nil(t, g.Declare(PlayerInitialMiddlehand, GameTypeHearts, NoGameModifiers, skat))
 		handAfter := g.GetHand(PlayerInitialMiddlehand)
 		assert.Equal(t, 10, len(handAfter))
 		assert.Equal(t, handBefore, handAfter)
 	})
 
-	t.Run("allow pushing cards other than the skat", func(t *testing.T) {
+	t.Run("reject declare with push with cards not in hand", func(t *testing.T) {
 		g := testGetDeclarationPhaseGame(t)
-		skat := g.GetSkat()
 		handBefore := g.GetHand(PlayerInitialMiddlehand)
+		otherHand := g.GetHand(PlayerInitialForehand)
 
 		assert.Nil(t, g.TakeSkat(PlayerInitialMiddlehand))
-		assert.Nil(t, g.PushCards(PlayerInitialMiddlehand, handBefore[0], handBefore[1]))
+
+		handWithSkat := g.GetHand(PlayerInitialMiddlehand)
+		assert.Equal(t, ErrInvalidPush, g.Declare(PlayerInitialMiddlehand, GameTypeHearts, NoGameModifiers, []Card{handBefore[0], otherHand[0]}))
+		assert.Equal(t, PhaseDeclaration, g.Phase())
 		handAfter := g.GetHand(PlayerInitialMiddlehand)
-		assert.Equal(t, 10, len(handAfter))
-		assert.Equal(t, append(handBefore[2:], skat...), handAfter)
+		assert.Equal(t, 12, len(handAfter))
+		assert.Equal(t, handWithSkat, handAfter)
+	})
+}
+
+func TestGameStatePlayingPhase(t *testing.T) {
+	t.Run("playing tricks mutates frontend hand", func(t *testing.T) {
+		g := testGetPlayingPhaseGame(t, GameTypeHearts)
+		handBefore := g.GetHand(PlayerInitialForehand)
+		assert.Nil(t, g.Playing().Play(PlayerInitialForehand, handBefore[0]))
+		handAfter := g.GetHand(PlayerInitialForehand)
+		assert.Equal(t, 9, len(handAfter))
+		assert.False(t, handAfter.Contains(handBefore[0]))
 	})
 
-	t.Run("reject declare while skat is on hand", func(t *testing.T) {
-		g := testGetDeclarationPhaseGame(t)
-
-		assert.Nil(t, g.TakeSkat(PlayerInitialMiddlehand))
-		assert.Equal(t, ErrWrongPhase, g.Declare(PlayerInitialMiddlehand, GameTypeHearts, NoGameModifiers))
+	t.Run("playing state is initialized correctly", func(t *testing.T) {
+		g := testGetPlayingPhaseGame(t, GameTypeHearts)
+		for i := PlayerInitialForehand; i <= PlayerInitialRearhand; i = i + 1 {
+			assert.Equal(t, g.GetHand(i), g.Playing().GetHand(i))
+		}
+		assert.Equal(t, PlayerInitialMiddlehand, g.Playing().Declarer())
+		assert.Equal(t, 2, len(g.Playing().GetWonCards(g.Playing().Declarer())))
+		assert.Equal(t, PlayerInitialForehand, g.Playing().GetCurrentPlayer())
+		assert.Equal(t, GameTypeHearts, g.Playing().GameType())
 	})
 }

@@ -12,6 +12,8 @@ var (
 	ErrBiddingNotDone  = errors.New("bidding has not completed yet")
 	ErrInvalidGameType = errors.New("invalid game type")
 	ErrNotImplemented  = errors.New("not implemented")
+	ErrInvalidGame     = errors.New("invalid game")
+	ErrInvalidPush     = errors.New("invalid push request")
 )
 
 const (
@@ -44,11 +46,6 @@ const (
 	ServerSeedSize = 16
 )
 
-type PlayingState struct {
-	Forehand int
-	Declarer int
-}
-
 type CommonPlayerState struct {
 	Seed []byte
 	Hand CardSet
@@ -61,9 +58,9 @@ type GameState struct {
 	dealerSeed          []byte
 	dealerLookingAtHand int
 
-	skat           CardSet
-	players        [3]CommonPlayerState
-	stateModifiers GameModifier
+	skat      CardSet
+	players   [3]CommonPlayerState
+	modifiers GameModifier
 
 	biddingState *BiddingState
 	playingState *PlayingState
@@ -74,7 +71,7 @@ func NewGame(withDealer bool) *GameState {
 		withDealer:          withDealer,
 		phase:               PhaseInit,
 		dealerLookingAtHand: PlayerNone,
-		stateModifiers:      GameModifierHand,
+		modifiers:           GameModifierHand,
 	}
 }
 
@@ -236,13 +233,13 @@ func (g *GameState) TakeSkat(player int) error {
 	if g.skat == nil {
 		return ErrWrongPhase
 	}
-	g.stateModifiers = g.stateModifiers &^ GameModifierHand
+	g.modifiers = g.modifiers.Without(GameModifierHand)
 	g.players[declarer].Hand = append(g.players[declarer].Hand, g.skat...)
 	g.skat = nil
 	return nil
 }
 
-func (g *GameState) PushCards(player int, card1 Card, card2 Card) error {
+func (g *GameState) Declare(player int, gameType GameType, announcedModifiers GameModifier, cardsToPush CardSet) error {
 	if g.phase != PhaseDeclaration {
 		return ErrWrongPhase
 	}
@@ -250,59 +247,64 @@ func (g *GameState) PushCards(player int, card1 Card, card2 Card) error {
 	if declarer != player {
 		return ErrNotYourTurn
 	}
-	// not taken -> no pushing
-	if g.stateModifiers&GameModifierHand == GameModifierHand {
-		return ErrWrongPhase
+	if !announcedModifiers.IsAnnounceable() {
+		return ErrInvalidGame
 	}
-	// already pushed?
-	playerHand := g.players[declarer].Hand
-	if len(playerHand) != 12 {
-		return ErrWrongPhase
+	newModifiers := g.modifiers | announcedModifiers
+	if !newModifiers.ValidForGame(gameType) {
+		return ErrInvalidGame
 	}
-	playerHand, err := playerHand.Pop(card1)
-	if err != nil {
-		return err
+
+	if !g.modifiers.Test(GameModifierHand) && len(cardsToPush) != 2 {
+		return ErrInvalidPush
 	}
-	playerHand, err = playerHand.Pop(card2)
-	if err != nil {
-		return err
+	if g.modifiers.Test(GameModifierHand) && len(cardsToPush) != 0 {
+		return ErrInvalidPush
 	}
-	g.players[declarer].Hand = playerHand
+	newHand := g.players[player].Hand
+	for _, card := range cardsToPush {
+		var err error
+		newHand, err = newHand.Pop(card)
+		if err != nil {
+			return ErrInvalidPush
+		}
+	}
+
+	var skatCards CardSet
+	if len(cardsToPush) > 0 {
+		skatCards = cardsToPush
+	} else {
+		skatCards = g.skat
+		g.skat = nil
+	}
+
+	g.players[player].Hand = newHand
+	g.phase = PhasePlaying
+	g.playingState = NewPlayingState(
+		g.biddingState.Declarer(),
+		gameType,
+		[3]*CardSet{
+			&g.players[0].Hand,
+			&g.players[1].Hand,
+			&g.players[2].Hand,
+		},
+		skatCards,
+	)
 	return nil
 }
 
-func (g *GameState) Declare(player int, gameType GameType, announcedModifiers GameModifier) error {
-	if g.phase != PhaseDeclaration {
-		return ErrWrongPhase
-	}
-	declarer := g.biddingState.Declarer()
-	if declarer != player {
-		return ErrNotYourTurn
-	}
-	// ensure that skat is either not taken or already pushed
-	if len(g.players[declarer].Hand) != 10 {
-		return ErrWrongPhase
-	}
-	// TODO: validate modifiers
-	// TODO: update game type
-	// TODO: transition to playing phase
-	return ErrNotImplemented
+func (g *GameState) GetHand(player int) CardSet {
+	return g.players[player].Hand.Copy()
 }
 
-func (g *GameState) GetHand(player int) []Card {
-	hand := g.players[player].Hand
-	result := make([]Card, len(hand))
-	copy(result, hand)
-	return result
+func (g *GameState) GetSkat() CardSet {
+	return g.skat.Copy()
 }
 
-func (g *GameState) GetSkat() []Card {
-	cards := g.skat
-	result := make([]Card, len(cards))
-	copy(result, cards)
-	return cards
+func (g *GameState) Modifiers() GameModifier {
+	return g.modifiers
 }
 
-func (g *GameState) GetStateModifiers() GameModifier {
-	return g.stateModifiers
+func (g *GameState) Playing() *PlayingState {
+	return g.playingState
 }
