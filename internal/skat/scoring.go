@@ -8,6 +8,7 @@ const (
 	LossReasonNotEnoughPoints = "not_enough_points"
 	LossReasonNoSchneider     = "no_schneider"
 	LossReasonNoSchwarz       = "no_schwarz"
+	LossReasonNotNull         = "not_null"
 	LossReasonOverbid         = "overbid"
 )
 
@@ -240,12 +241,20 @@ func EvaluateWonCards(wonCards [3]CardSet, declarer int) (modifiers GameModifier
 	return modifiers, declarerScore, defenderScore
 }
 
-func EvaluateGame(gameBaseValue int, gameValueFactor int, declarerScore int, declarerBid int, modifiers GameModifier) (declarerWon bool, gameValue int, lossReason string) {
+func EvaluateGame(gameBaseValue int, gameValueFactor int, declarerScore int, declarerBid int, gameType GameType, modifiers GameModifier) (declarerWon bool, gameValue int, lossReason string) {
 	gameValue = gameBaseValue * gameValueFactor
 	if gameValue < declarerBid {
 		// overbid!
 		gameValue = gameBaseValue * ((declarerBid + gameBaseValue - 1) / gameBaseValue)
 		return false, gameValue, LossReasonOverbid
+	}
+
+	if gameType == GameTypeNull {
+		if !modifiers.Test(GameModifierSchwarz) || declarerScore > 0 {
+			return false, gameValue, LossReasonNotNull
+		} else {
+			return true, gameValue, ""
+		}
 	}
 
 	if modifiers.Test(GameModifierSchwarzAnnounced) && !modifiers.Test(GameModifierSchwarz) {

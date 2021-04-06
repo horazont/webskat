@@ -357,6 +357,7 @@ func (g *GameState) EvaluateGame() error {
 		factor,
 		declarerScore,
 		g.biddingState.CalledGameValue(),
+		g.playingState.GameType(),
 		modifiers,
 	)
 	playerScores := g.scoring.CalculateScore(

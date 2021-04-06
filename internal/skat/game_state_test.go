@@ -343,4 +343,17 @@ func TestGameStatePlayingPhaseCompleted(t *testing.T) {
 		assert.Equal(t, 40, g.GetScore(PlayerInitialRearhand))
 		assert.Equal(t, LossReasonNotEnoughPoints, g.GetLossReason())
 	})
+
+	t.Run("evaluate game: standard null", func(t *testing.T) {
+		g := testGetDonePlayingPhaseGame(t, GameTypeNull)
+		assert.Nil(t, g.EvaluateGame())
+		assert.Equal(t, PhaseScored, g.Phase())
+		assert.Equal(t, 10, len(g.GetHand(PlayerInitialForehand)))
+		assert.Equal(t, 12, len(g.GetHand(PlayerInitialMiddlehand)))
+		assert.Equal(t, 10, len(g.GetHand(PlayerInitialRearhand)))
+		assert.Equal(t, 40, g.GetScore(PlayerInitialForehand))
+		assert.Equal(t, -70, g.GetScore(PlayerInitialMiddlehand))
+		assert.Equal(t, 40, g.GetScore(PlayerInitialRearhand))
+		assert.Equal(t, LossReasonNotNull, g.GetLossReason())
+	})
 }

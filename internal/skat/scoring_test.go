@@ -479,6 +479,7 @@ func TestEvaluateGame(t *testing.T) {
 			2,
 			120,
 			18,
+			0,
 			NoGameModifiers,
 		)
 		assert.True(t, won)
@@ -492,6 +493,7 @@ func TestEvaluateGame(t *testing.T) {
 			2,
 			60,
 			18,
+			0,
 			NoGameModifiers,
 		)
 		assert.False(t, won)
@@ -505,6 +507,7 @@ func TestEvaluateGame(t *testing.T) {
 			2,
 			70,
 			20,
+			0,
 			NoGameModifiers,
 		)
 		assert.False(t, won)
@@ -516,6 +519,7 @@ func TestEvaluateGame(t *testing.T) {
 			2,
 			70,
 			18,
+			0,
 			NoGameModifiers,
 		)
 		assert.Equal(t, 18, gameValue)
@@ -527,6 +531,7 @@ func TestEvaluateGame(t *testing.T) {
 			2,
 			30,
 			20,
+			0,
 			NoGameModifiers,
 		)
 		assert.False(t, won)
@@ -539,6 +544,7 @@ func TestEvaluateGame(t *testing.T) {
 			2,
 			30,
 			20,
+			0,
 			GameModifierSchneiderAnnounced,
 		)
 		assert.False(t, won)
@@ -551,6 +557,7 @@ func TestEvaluateGame(t *testing.T) {
 			2,
 			120,
 			18,
+			0,
 			GameModifierSchneiderAnnounced,
 		)
 		assert.False(t, won)
@@ -564,6 +571,7 @@ func TestEvaluateGame(t *testing.T) {
 			2,
 			120,
 			18,
+			0,
 			GameModifierSchwarzAnnounced.Normalized(),
 		)
 		assert.False(t, won)
@@ -575,10 +583,51 @@ func TestEvaluateGame(t *testing.T) {
 			2,
 			120,
 			18,
+			0,
 			GameModifierSchwarzAnnounced.Normalized().With(GameModifierSchneider),
 		)
 		assert.False(t, won)
 		assert.Equal(t, 18, gameValue)
 		assert.Equal(t, LossReasonNoSchwarz, reason)
+	})
+
+	t.Run("null game with any cards", func(t *testing.T) {
+		won, gameValue, reason := EvaluateGame(
+			35,
+			1,
+			0,
+			18,
+			GameTypeNull,
+			NoGameModifiers,
+		)
+		assert.False(t, won)
+		assert.Equal(t, 35, gameValue)
+		assert.Equal(t, LossReasonNotNull, reason)
+
+		won, gameValue, reason = EvaluateGame(
+			35,
+			1,
+			120,
+			18,
+			GameTypeNull,
+			GameModifierSchwarz.Normalized(),
+		)
+		assert.False(t, won)
+		assert.Equal(t, 35, gameValue)
+		assert.Equal(t, LossReasonNotNull, reason)
+	})
+
+	t.Run("won null game", func(t *testing.T) {
+		won, gameValue, reason := EvaluateGame(
+			35,
+			1,
+			0,
+			18,
+			GameTypeNull,
+			GameModifierSchwarz.Normalized(),
+		)
+		assert.True(t, won)
+		assert.Equal(t, 35, gameValue)
+		assert.Equal(t, "", reason)
 	})
 }
