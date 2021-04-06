@@ -348,6 +348,7 @@ func TestCardRelativePower(t *testing.T) {
 					prevCard.RelativePower(gameType),
 					card.RelativePower(gameType),
 				)
+				prevCard = card
 			}
 		}
 	})

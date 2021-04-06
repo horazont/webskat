@@ -169,6 +169,10 @@ func (c Card) RelativePower(gameType GameType) int {
 		}
 		return int(c.Type)
 	case GameTypeBells, GameTypeHearts, GameTypeLeaves, GameTypeAcorns:
+		suit := c.EffectiveSuit(gameType)
+		if suit == EffectiveSuitTrumps && c.Type == CardJack {
+			return int(c.Suit) + trumpRelativePowerOffset
+		}
 		return int(c.Type)
 	}
 	return 0
@@ -318,4 +322,11 @@ func (cs CardSet) Push(c Card) (CardSet, error) {
 	copy(result, cs)
 	result[len(cs)] = c
 	return result, nil
+}
+
+func (cs CardSet) Value() (sum int) {
+	for _, card := range cs {
+		sum = sum + card.Value()
+	}
+	return sum
 }

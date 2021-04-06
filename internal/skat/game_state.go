@@ -47,8 +47,9 @@ const (
 )
 
 type CommonPlayerState struct {
-	Seed []byte
-	Hand CardSet
+	Seed  []byte
+	Hand  CardSet
+	Score int
 }
 
 type GameState struct {
@@ -307,4 +308,14 @@ func (g *GameState) Modifiers() GameModifier {
 
 func (g *GameState) Playing() *PlayingState {
 	return g.playingState
+}
+
+func (g *GameState) EvaluateGame() error {
+	if g.phase != PhasePlaying {
+		return ErrWrongPhase
+	}
+	if len(g.playingState.GetHand(PlayerInitialForehand)) > 0 {
+		return ErrWrongPhase
+	}
+	return ErrNotImplemented
 }
