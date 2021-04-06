@@ -141,7 +141,7 @@ func TestGameStateBiddingPhase(t *testing.T) {
 	t.Run("reject declare", func(t *testing.T) {
 		g := testGetBiddingPhaseGame(t)
 
-		assert.Equal(t, ErrWrongPhase, g.Declare(PlayerInitialMiddlehand, GameTypeBells, NoGameModifiers, []Card{}))
+		assert.Equal(t, ErrWrongPhase, g.Declare(PlayerInitialMiddlehand, GameTypeDiamonds, NoGameModifiers, []Card{}))
 	})
 
 	t.Run("transition to declaration phase when bidding is concluded", func(t *testing.T) {
@@ -280,7 +280,7 @@ func TestGameStatePlayingPhase(t *testing.T) {
 
 func TestGameStatePlayingPhaseCompleted(t *testing.T) {
 	t.Run("evaluate game: standard bells", func(t *testing.T) {
-		g := testGetDonePlayingPhaseGame(t, GameTypeBells)
+		g := testGetDonePlayingPhaseGame(t, GameTypeDiamonds)
 		assert.Nil(t, g.EvaluateGame())
 		assert.Equal(t, PhaseScored, g.Phase())
 		assert.Equal(t, 10, len(g.GetHand(PlayerInitialForehand)))
@@ -306,7 +306,7 @@ func TestGameStatePlayingPhaseCompleted(t *testing.T) {
 	})
 
 	t.Run("evaluate game: standard leaves", func(t *testing.T) {
-		g := testGetDonePlayingPhaseGame(t, GameTypeLeaves)
+		g := testGetDonePlayingPhaseGame(t, GameTypeSpades)
 		assert.Nil(t, g.EvaluateGame())
 		assert.Equal(t, PhaseScored, g.Phase())
 		assert.Equal(t, 10, len(g.GetHand(PlayerInitialForehand)))
@@ -319,7 +319,7 @@ func TestGameStatePlayingPhaseCompleted(t *testing.T) {
 	})
 
 	t.Run("evaluate game: standard acorns", func(t *testing.T) {
-		g := testGetDonePlayingPhaseGame(t, GameTypeAcorns)
+		g := testGetDonePlayingPhaseGame(t, GameTypeClubs)
 		assert.Nil(t, g.EvaluateGame())
 		assert.Equal(t, PhaseScored, g.Phase())
 		assert.Equal(t, 10, len(g.GetHand(PlayerInitialForehand)))

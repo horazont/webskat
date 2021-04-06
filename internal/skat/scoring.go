@@ -98,22 +98,22 @@ func effectivePower(c Card, gameType GameType) int {
 
 var (
 	referenceOrder = CardSet{
-		CardJack.As(SuitAcorns),
-		CardJack.As(SuitLeaves),
+		CardJack.As(SuitClubs),
+		CardJack.As(SuitSpades),
 		CardJack.As(SuitHearts),
-		CardJack.As(SuitBells),
-		CardAce.As(SuitBells),
-		Card10.As(SuitBells),
-		CardKing.As(SuitBells),
-		CardQueen.As(SuitBells),
-		Card9.As(SuitBells),
-		Card8.As(SuitBells),
-		Card7.As(SuitBells),
+		CardJack.As(SuitDiamonds),
+		CardAce.As(SuitDiamonds),
+		Card10.As(SuitDiamonds),
+		CardKing.As(SuitDiamonds),
+		CardQueen.As(SuitDiamonds),
+		Card9.As(SuitDiamonds),
+		Card8.As(SuitDiamonds),
+		Card7.As(SuitDiamonds),
 	}
 )
 
 const (
-	referenceGameType = GameTypeBells
+	referenceGameType = GameTypeDiamonds
 )
 
 func (cs CardSet) GetMatadorsJackStrength(gameType GameType) int {
@@ -186,15 +186,15 @@ func CalculateGameValue(initialDeclarerHand CardSet, gameType GameType, modifier
 				return 23, factor
 			}
 		}
-	case GameTypeBells, GameTypeHearts, GameTypeLeaves, GameTypeAcorns, GameTypeGrand:
+	case GameTypeDiamonds, GameTypeHearts, GameTypeSpades, GameTypeClubs, GameTypeGrand:
 		switch gameType {
-		case GameTypeBells:
+		case GameTypeDiamonds:
 			base = 9
 		case GameTypeHearts:
 			base = 10
-		case GameTypeLeaves:
+		case GameTypeSpades:
 			base = 11
-		case GameTypeAcorns:
+		case GameTypeClubs:
 			base = 12
 		case GameTypeGrand:
 			base = 24

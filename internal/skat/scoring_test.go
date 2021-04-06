@@ -19,32 +19,32 @@ func testGetOnTheEdgeGame(t *testing.T) [3]CardSet {
 
 	assert.Equal(t, 32, len(deck))
 
-	assert.Nil(t, testTransferCard(&deck, &player1, CardAce.As(SuitBells)))
+	assert.Nil(t, testTransferCard(&deck, &player1, CardAce.As(SuitDiamonds)))
 	assert.Nil(t, testTransferCard(&deck, &player1, CardAce.As(SuitHearts)))
-	assert.Nil(t, testTransferCard(&deck, &player1, CardKing.As(SuitBells)))
-	assert.Nil(t, testTransferCard(&deck, &player1, CardJack.As(SuitBells)))
+	assert.Nil(t, testTransferCard(&deck, &player1, CardKing.As(SuitDiamonds)))
+	assert.Nil(t, testTransferCard(&deck, &player1, CardJack.As(SuitDiamonds)))
 	assert.Nil(t, testTransferCard(&deck, &player1, CardJack.As(SuitHearts)))
 
 	assert.Equal(t, 30, player1.Value())
 
-	assert.Nil(t, testTransferCard(&deck, &player2, Card10.As(SuitBells)))
+	assert.Nil(t, testTransferCard(&deck, &player2, Card10.As(SuitDiamonds)))
 	assert.Nil(t, testTransferCard(&deck, &player2, Card10.As(SuitHearts)))
-	assert.Nil(t, testTransferCard(&deck, &player2, Card10.As(SuitLeaves)))
-	assert.Nil(t, testTransferCard(&deck, &player2, Card10.As(SuitAcorns)))
-	assert.Nil(t, testTransferCard(&deck, &player2, CardAce.As(SuitLeaves)))
-	assert.Nil(t, testTransferCard(&deck, &player2, CardQueen.As(SuitBells)))
+	assert.Nil(t, testTransferCard(&deck, &player2, Card10.As(SuitSpades)))
+	assert.Nil(t, testTransferCard(&deck, &player2, Card10.As(SuitClubs)))
+	assert.Nil(t, testTransferCard(&deck, &player2, CardAce.As(SuitSpades)))
+	assert.Nil(t, testTransferCard(&deck, &player2, CardQueen.As(SuitDiamonds)))
 	assert.Nil(t, testTransferCard(&deck, &player2, CardQueen.As(SuitHearts)))
-	assert.Nil(t, testTransferCard(&deck, &player2, CardQueen.As(SuitLeaves)))
+	assert.Nil(t, testTransferCard(&deck, &player2, CardQueen.As(SuitSpades)))
 
 	assert.Equal(t, 60, player2.Value())
 
-	assert.Nil(t, testTransferCard(&deck, &player3, CardAce.As(SuitAcorns)))
+	assert.Nil(t, testTransferCard(&deck, &player3, CardAce.As(SuitClubs)))
 	assert.Nil(t, testTransferCard(&deck, &player3, CardKing.As(SuitHearts)))
-	assert.Nil(t, testTransferCard(&deck, &player3, CardKing.As(SuitLeaves)))
-	assert.Nil(t, testTransferCard(&deck, &player3, CardKing.As(SuitAcorns)))
-	assert.Nil(t, testTransferCard(&deck, &player3, CardQueen.As(SuitAcorns)))
-	assert.Nil(t, testTransferCard(&deck, &player3, CardJack.As(SuitLeaves)))
-	assert.Nil(t, testTransferCard(&deck, &player3, CardJack.As(SuitAcorns)))
+	assert.Nil(t, testTransferCard(&deck, &player3, CardKing.As(SuitSpades)))
+	assert.Nil(t, testTransferCard(&deck, &player3, CardKing.As(SuitClubs)))
+	assert.Nil(t, testTransferCard(&deck, &player3, CardQueen.As(SuitClubs)))
+	assert.Nil(t, testTransferCard(&deck, &player3, CardJack.As(SuitSpades)))
+	assert.Nil(t, testTransferCard(&deck, &player3, CardJack.As(SuitClubs)))
 
 	assert.Equal(t, 30, player3.Value())
 
@@ -92,32 +92,32 @@ func testBalancedGame(t *testing.T) [3]CardSet {
 
 	assert.Equal(t, 32, len(deck))
 
-	assert.Nil(t, testTransferCard(&deck, &player1, CardAce.As(SuitBells)))
-	assert.Nil(t, testTransferCard(&deck, &player1, CardJack.As(SuitBells)))
+	assert.Nil(t, testTransferCard(&deck, &player1, CardAce.As(SuitDiamonds)))
+	assert.Nil(t, testTransferCard(&deck, &player1, CardJack.As(SuitDiamonds)))
 	assert.Nil(t, testTransferCard(&deck, &player1, CardJack.As(SuitHearts)))
 
 	assert.Equal(t, 15, player1.Value())
 
-	assert.Nil(t, testTransferCard(&deck, &player2, Card10.As(SuitBells)))
+	assert.Nil(t, testTransferCard(&deck, &player2, Card10.As(SuitDiamonds)))
 	assert.Nil(t, testTransferCard(&deck, &player2, Card10.As(SuitHearts)))
-	assert.Nil(t, testTransferCard(&deck, &player2, Card10.As(SuitLeaves)))
-	assert.Nil(t, testTransferCard(&deck, &player2, Card10.As(SuitAcorns)))
+	assert.Nil(t, testTransferCard(&deck, &player2, Card10.As(SuitSpades)))
+	assert.Nil(t, testTransferCard(&deck, &player2, Card10.As(SuitClubs)))
 	assert.Nil(t, testTransferCard(&deck, &player2, CardAce.As(SuitHearts)))
-	assert.Nil(t, testTransferCard(&deck, &player2, CardAce.As(SuitLeaves)))
-	assert.Nil(t, testTransferCard(&deck, &player2, CardQueen.As(SuitBells)))
+	assert.Nil(t, testTransferCard(&deck, &player2, CardAce.As(SuitSpades)))
+	assert.Nil(t, testTransferCard(&deck, &player2, CardQueen.As(SuitDiamonds)))
 	assert.Nil(t, testTransferCard(&deck, &player2, CardQueen.As(SuitHearts)))
-	assert.Nil(t, testTransferCard(&deck, &player2, CardQueen.As(SuitLeaves)))
+	assert.Nil(t, testTransferCard(&deck, &player2, CardQueen.As(SuitSpades)))
 
 	assert.Equal(t, 71, player2.Value())
 
-	assert.Nil(t, testTransferCard(&deck, &player3, CardAce.As(SuitAcorns)))
-	assert.Nil(t, testTransferCard(&deck, &player3, CardKing.As(SuitBells)))
+	assert.Nil(t, testTransferCard(&deck, &player3, CardAce.As(SuitClubs)))
+	assert.Nil(t, testTransferCard(&deck, &player3, CardKing.As(SuitDiamonds)))
 	assert.Nil(t, testTransferCard(&deck, &player3, CardKing.As(SuitHearts)))
-	assert.Nil(t, testTransferCard(&deck, &player3, CardKing.As(SuitLeaves)))
-	assert.Nil(t, testTransferCard(&deck, &player3, CardKing.As(SuitAcorns)))
-	assert.Nil(t, testTransferCard(&deck, &player3, CardQueen.As(SuitAcorns)))
-	assert.Nil(t, testTransferCard(&deck, &player3, CardJack.As(SuitLeaves)))
-	assert.Nil(t, testTransferCard(&deck, &player3, CardJack.As(SuitAcorns)))
+	assert.Nil(t, testTransferCard(&deck, &player3, CardKing.As(SuitSpades)))
+	assert.Nil(t, testTransferCard(&deck, &player3, CardKing.As(SuitClubs)))
+	assert.Nil(t, testTransferCard(&deck, &player3, CardQueen.As(SuitClubs)))
+	assert.Nil(t, testTransferCard(&deck, &player3, CardJack.As(SuitSpades)))
+	assert.Nil(t, testTransferCard(&deck, &player3, CardJack.As(SuitClubs)))
 
 	assert.Equal(t, 34, player3.Value())
 
@@ -134,61 +134,61 @@ func testBalancedGame(t *testing.T) [3]CardSet {
 
 func TestGetMatadorsJackStrength(t *testing.T) {
 	baseHand := CardSet{
-		CardJack.As(SuitAcorns),
-		CardJack.As(SuitLeaves),
+		CardJack.As(SuitClubs),
+		CardJack.As(SuitSpades),
 		CardJack.As(SuitHearts),
-		CardJack.As(SuitBells),
+		CardJack.As(SuitDiamonds),
 		CardAce.As(SuitHearts),
-		CardAce.As(SuitLeaves),
-		Card10.As(SuitLeaves),
-		CardKing.As(SuitLeaves),
-		CardQueen.As(SuitLeaves),
-		Card9.As(SuitLeaves),
-		Card8.As(SuitLeaves),
-		Card7.As(SuitBells),
+		CardAce.As(SuitSpades),
+		Card10.As(SuitSpades),
+		CardKing.As(SuitSpades),
+		CardQueen.As(SuitSpades),
+		Card9.As(SuitSpades),
+		Card8.As(SuitSpades),
+		Card7.As(SuitDiamonds),
 		Card7.As(SuitHearts),
-		Card7.As(SuitLeaves),
+		Card7.As(SuitSpades),
 	}
 
 	t.Run("suit game with: full strength", func(t *testing.T) {
 		hand := baseHand.Copy()
-		assert.Equal(t, 11, hand.GetMatadorsJackStrength(GameTypeLeaves))
+		assert.Equal(t, 11, hand.GetMatadorsJackStrength(GameTypeSpades))
 	})
 
 	t.Run("suit game without: full strength", func(t *testing.T) {
 		hand := baseHand.Copy()
-		hand, _ = hand.Pop(CardJack.As(SuitAcorns))
-		hand, _ = hand.Pop(CardJack.As(SuitLeaves))
+		hand, _ = hand.Pop(CardJack.As(SuitClubs))
+		hand, _ = hand.Pop(CardJack.As(SuitSpades))
 		hand, _ = hand.Pop(CardJack.As(SuitHearts))
-		hand, _ = hand.Pop(CardJack.As(SuitBells))
-		assert.Equal(t, 11, hand.GetMatadorsJackStrength(GameTypeAcorns))
+		hand, _ = hand.Pop(CardJack.As(SuitDiamonds))
+		assert.Equal(t, 11, hand.GetMatadorsJackStrength(GameTypeClubs))
 	})
 
 	t.Run("suit game with: gaps", func(t *testing.T) {
 		hand := baseHand.Copy()
 		hand, _ = hand.Pop(CardJack.As(SuitHearts))
-		assert.Equal(t, 2, hand.GetMatadorsJackStrength(GameTypeLeaves))
+		assert.Equal(t, 2, hand.GetMatadorsJackStrength(GameTypeSpades))
 
 		hand = baseHand.Copy()
 		assert.Equal(t, 5, hand.GetMatadorsJackStrength(GameTypeHearts))
 
 		hand = baseHand.Copy()
-		hand, _ = hand.Pop(CardAce.As(SuitLeaves))
-		assert.Equal(t, 4, hand.GetMatadorsJackStrength(GameTypeLeaves))
+		hand, _ = hand.Pop(CardAce.As(SuitSpades))
+		assert.Equal(t, 4, hand.GetMatadorsJackStrength(GameTypeSpades))
 	})
 
 	t.Run("suit game without: gaps", func(t *testing.T) {
 		hand := baseHand.Copy()
-		hand, _ = hand.Pop(CardJack.As(SuitAcorns))
-		hand, _ = hand.Pop(CardJack.As(SuitLeaves))
-		assert.Equal(t, 2, hand.GetMatadorsJackStrength(GameTypeLeaves))
+		hand, _ = hand.Pop(CardJack.As(SuitClubs))
+		hand, _ = hand.Pop(CardJack.As(SuitSpades))
+		assert.Equal(t, 2, hand.GetMatadorsJackStrength(GameTypeSpades))
 
 		hand = baseHand.Copy()
-		hand, _ = hand.Pop(CardJack.As(SuitAcorns))
-		hand, _ = hand.Pop(CardJack.As(SuitLeaves))
+		hand, _ = hand.Pop(CardJack.As(SuitClubs))
+		hand, _ = hand.Pop(CardJack.As(SuitSpades))
 		hand, _ = hand.Pop(CardJack.As(SuitHearts))
-		hand, _ = hand.Pop(CardJack.As(SuitBells))
-		assert.Equal(t, 4, hand.GetMatadorsJackStrength(GameTypeLeaves))
+		hand, _ = hand.Pop(CardJack.As(SuitDiamonds))
+		assert.Equal(t, 4, hand.GetMatadorsJackStrength(GameTypeSpades))
 	})
 
 	t.Run("grand game with: full strength", func(t *testing.T) {
@@ -198,22 +198,22 @@ func TestGetMatadorsJackStrength(t *testing.T) {
 
 	t.Run("grand game without: full strength", func(t *testing.T) {
 		hand := baseHand.Copy()
-		hand, _ = hand.Pop(CardJack.As(SuitAcorns))
-		hand, _ = hand.Pop(CardJack.As(SuitLeaves))
+		hand, _ = hand.Pop(CardJack.As(SuitClubs))
+		hand, _ = hand.Pop(CardJack.As(SuitSpades))
 		hand, _ = hand.Pop(CardJack.As(SuitHearts))
-		hand, _ = hand.Pop(CardJack.As(SuitBells))
+		hand, _ = hand.Pop(CardJack.As(SuitDiamonds))
 		assert.Equal(t, 4, hand.GetMatadorsJackStrength(GameTypeGrand))
 	})
 
 	t.Run("grand game with: gaps", func(t *testing.T) {
 		hand := baseHand.Copy()
-		hand, _ = hand.Pop(CardJack.As(SuitLeaves))
+		hand, _ = hand.Pop(CardJack.As(SuitSpades))
 		assert.Equal(t, 1, hand.GetMatadorsJackStrength(GameTypeGrand))
 	})
 
 	t.Run("grand game without: gaps", func(t *testing.T) {
 		hand := baseHand.Copy()
-		hand, _ = hand.Pop(CardJack.As(SuitAcorns))
+		hand, _ = hand.Pop(CardJack.As(SuitClubs))
 		hand, _ = hand.Pop(CardJack.As(SuitHearts))
 		assert.Equal(t, 1, hand.GetMatadorsJackStrength(GameTypeGrand))
 	})
@@ -226,25 +226,25 @@ func TestGetMatadorsJackStrength(t *testing.T) {
 
 func TestCalculateGameValue(t *testing.T) {
 	factorOneHand := CardSet{
-		CardJack.As(SuitAcorns),
+		CardJack.As(SuitClubs),
 		CardJack.As(SuitHearts),
 	}
 
 	baseHand := CardSet{
-		CardJack.As(SuitAcorns),
-		CardJack.As(SuitLeaves),
+		CardJack.As(SuitClubs),
+		CardJack.As(SuitSpades),
 		CardJack.As(SuitHearts),
-		CardJack.As(SuitBells),
+		CardJack.As(SuitDiamonds),
 		CardAce.As(SuitHearts),
-		CardAce.As(SuitLeaves),
-		Card10.As(SuitLeaves),
-		CardKing.As(SuitLeaves),
-		CardQueen.As(SuitLeaves),
-		Card9.As(SuitLeaves),
-		Card8.As(SuitLeaves),
-		Card7.As(SuitBells),
+		CardAce.As(SuitSpades),
+		Card10.As(SuitSpades),
+		CardKing.As(SuitSpades),
+		CardQueen.As(SuitSpades),
+		Card9.As(SuitSpades),
+		Card8.As(SuitSpades),
+		Card7.As(SuitDiamonds),
 		Card7.As(SuitHearts),
-		Card7.As(SuitLeaves),
+		Card7.As(SuitSpades),
 	}
 
 	nonSpecialGameTypes := append([]GameType{
@@ -276,7 +276,7 @@ func TestCalculateGameValue(t *testing.T) {
 	})
 
 	t.Run("bells game base value", func(t *testing.T) {
-		base, factor := CalculateGameValue(factorOneHand, GameTypeBells, NoGameModifiers)
+		base, factor := CalculateGameValue(factorOneHand, GameTypeDiamonds, NoGameModifiers)
 		assert.Equal(t, 9, base)
 		assert.Equal(t, 2, factor)
 	})
@@ -288,13 +288,13 @@ func TestCalculateGameValue(t *testing.T) {
 	})
 
 	t.Run("leaves game base value", func(t *testing.T) {
-		base, factor := CalculateGameValue(factorOneHand, GameTypeLeaves, NoGameModifiers)
+		base, factor := CalculateGameValue(factorOneHand, GameTypeSpades, NoGameModifiers)
 		assert.Equal(t, 11, base)
 		assert.Equal(t, 2, factor)
 	})
 
 	t.Run("acorns game base value", func(t *testing.T) {
-		base, factor := CalculateGameValue(factorOneHand, GameTypeAcorns, NoGameModifiers)
+		base, factor := CalculateGameValue(factorOneHand, GameTypeClubs, NoGameModifiers)
 		assert.Equal(t, 12, base)
 		assert.Equal(t, 2, factor)
 	})
@@ -304,19 +304,19 @@ func TestCalculateGameValue(t *testing.T) {
 		var factor int
 
 		hand = baseHand.Copy()
-		_, factor = CalculateGameValue(hand, GameTypeLeaves, NoGameModifiers)
+		_, factor = CalculateGameValue(hand, GameTypeSpades, NoGameModifiers)
 		assert.Equal(t, 12, factor)
 
 		hand = baseHand.Copy()
 		hand, _ = hand.Pop(CardJack.As(SuitHearts))
-		_, factor = CalculateGameValue(hand, GameTypeLeaves, NoGameModifiers)
+		_, factor = CalculateGameValue(hand, GameTypeSpades, NoGameModifiers)
 		assert.Equal(t, 3, factor)
 
 		hand = baseHand.Copy()
-		hand, _ = hand.Pop(CardJack.As(SuitAcorns))
-		hand, _ = hand.Pop(CardJack.As(SuitLeaves))
+		hand, _ = hand.Pop(CardJack.As(SuitClubs))
+		hand, _ = hand.Pop(CardJack.As(SuitSpades))
 		hand, _ = hand.Pop(CardJack.As(SuitHearts))
-		_, factor = CalculateGameValue(hand, GameTypeLeaves, NoGameModifiers)
+		_, factor = CalculateGameValue(hand, GameTypeSpades, NoGameModifiers)
 		assert.Equal(t, 4, factor)
 	})
 

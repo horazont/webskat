@@ -13,18 +13,18 @@ var (
 )
 
 const (
-	GameTypeBells  GameType = 1
-	GameTypeHearts GameType = 2
-	GameTypeLeaves GameType = 3
-	GameTypeAcorns GameType = 4
-	GameTypeGrand  GameType = 5
-	GameTypeNull   GameType = 6
-	GameTypeJunk   GameType = 7
+	GameTypeDiamonds GameType = 1
+	GameTypeHearts   GameType = 2
+	GameTypeSpades   GameType = 3
+	GameTypeClubs    GameType = 4
+	GameTypeGrand    GameType = 5
+	GameTypeNull     GameType = 6
+	GameTypeJunk     GameType = 7
 )
 
 var (
-	StandardGameTypes = []GameType{GameTypeBells, GameTypeHearts, GameTypeLeaves, GameTypeAcorns, GameTypeGrand, GameTypeNull}
-	SuitGameTypes     = []GameType{GameTypeBells, GameTypeHearts, GameTypeLeaves, GameTypeAcorns}
+	StandardGameTypes = []GameType{GameTypeDiamonds, GameTypeHearts, GameTypeSpades, GameTypeClubs, GameTypeGrand, GameTypeNull}
+	SuitGameTypes     = []GameType{GameTypeDiamonds, GameTypeHearts, GameTypeSpades, GameTypeClubs}
 )
 
 type GameModifier uint16
@@ -66,32 +66,32 @@ var (
 type Suit int
 
 const (
-	SuitBells  Suit = 0
-	SuitHearts Suit = 1
-	SuitLeaves Suit = 2
-	SuitAcorns Suit = 3
+	SuitDiamonds Suit = 0
+	SuitHearts   Suit = 1
+	SuitSpades   Suit = 2
+	SuitClubs    Suit = 3
 )
 
 var (
-	Suits = [4]Suit{SuitBells, SuitHearts, SuitLeaves, SuitAcorns}
+	Suits = [4]Suit{SuitDiamonds, SuitHearts, SuitSpades, SuitClubs}
 )
 
 type EffectiveSuit int
 
 const (
-	EffectiveSuitBells  EffectiveSuit = 0
-	EffectiveSuitHearts EffectiveSuit = 1
-	EffectiveSuitLeaves EffectiveSuit = 2
-	EffectiveSuitAcorns EffectiveSuit = 3
-	EffectiveSuitTrumps EffectiveSuit = 4
+	EffectiveSuitDiamonds EffectiveSuit = 0
+	EffectiveSuitHearts   EffectiveSuit = 1
+	EffectiveSuitSpades   EffectiveSuit = 2
+	EffectiveSuitClubs    EffectiveSuit = 3
+	EffectiveSuitTrumps   EffectiveSuit = 4
 )
 
 var (
 	baseEffectiveSuitMap = map[Suit]EffectiveSuit{
-		SuitBells:  EffectiveSuitBells,
-		SuitHearts: EffectiveSuitHearts,
-		SuitLeaves: EffectiveSuitLeaves,
-		SuitAcorns: EffectiveSuitAcorns,
+		SuitDiamonds: EffectiveSuitDiamonds,
+		SuitHearts:   EffectiveSuitHearts,
+		SuitSpades:   EffectiveSuitSpades,
+		SuitClubs:    EffectiveSuitClubs,
 	}
 )
 
@@ -143,13 +143,13 @@ func (s Suit) As(c CardType) Card {
 
 func (s Suit) Pretty() string {
 	switch s {
-	case SuitBells:
+	case SuitDiamonds:
 		return "♦"
 	case SuitHearts:
 		return "♥"
-	case SuitLeaves:
+	case SuitSpades:
 		return "♠"
-	case SuitAcorns:
+	case SuitClubs:
 		return "♣"
 	}
 	return "-"
@@ -174,20 +174,20 @@ func (c Card) EffectiveSuit(gameType GameType) EffectiveSuit {
 		if c.Type == CardJack {
 			return EffectiveSuitTrumps
 		}
-	case GameTypeBells:
-		if c.Suit == SuitBells || c.Type == CardJack {
+	case GameTypeDiamonds:
+		if c.Suit == SuitDiamonds || c.Type == CardJack {
 			return EffectiveSuitTrumps
 		}
 	case GameTypeHearts:
 		if c.Suit == SuitHearts || c.Type == CardJack {
 			return EffectiveSuitTrumps
 		}
-	case GameTypeLeaves:
-		if c.Suit == SuitLeaves || c.Type == CardJack {
+	case GameTypeSpades:
+		if c.Suit == SuitSpades || c.Type == CardJack {
 			return EffectiveSuitTrumps
 		}
-	case GameTypeAcorns:
-		if c.Suit == SuitAcorns || c.Type == CardJack {
+	case GameTypeClubs:
+		if c.Suit == SuitClubs || c.Type == CardJack {
 			return EffectiveSuitTrumps
 		}
 	}
@@ -209,7 +209,7 @@ func (c Card) RelativePower(gameType GameType) int {
 			return 4
 		}
 		return int(c.Type)
-	case GameTypeBells, GameTypeHearts, GameTypeLeaves, GameTypeAcorns:
+	case GameTypeDiamonds, GameTypeHearts, GameTypeSpades, GameTypeClubs:
 		suit := c.EffectiveSuit(gameType)
 		if suit == EffectiveSuitTrumps && c.Type == CardJack {
 			return int(c.Suit) + trumpRelativePowerOffset
@@ -315,7 +315,7 @@ func (modifiers GameModifier) ValidForGame(game GameType) bool {
 			return true
 		}
 	// Suit games + Grand
-	case GameTypeAcorns, GameTypeBells, GameTypeHearts, GameTypeLeaves, GameTypeGrand:
+	case GameTypeClubs, GameTypeDiamonds, GameTypeHearts, GameTypeSpades, GameTypeGrand:
 		{
 			if modifiers.Test(GameModifierSchneiderAnnounced) && !modifiers.Test(GameModifierHand) {
 				return false

@@ -34,34 +34,34 @@ func testPlayingState(t *testing.T) *playingStateTest {
 
 	assert.Equal(t, 32, len(deck))
 
-	assert.Nil(t, testTransferCard(&deck, &pushed, Card7.As(SuitBells)))
-	assert.Nil(t, testTransferCard(&deck, &pushed, Card8.As(SuitBells)))
+	assert.Nil(t, testTransferCard(&deck, &pushed, Card7.As(SuitDiamonds)))
+	assert.Nil(t, testTransferCard(&deck, &pushed, Card8.As(SuitDiamonds)))
 
 	assert.Equal(t, 30, len(deck))
 
-	assert.Nil(t, testTransferCard(&deck, &forehand, CardJack.As(SuitAcorns)))
-	assert.Nil(t, testTransferCard(&deck, &forehand, CardJack.As(SuitLeaves)))
+	assert.Nil(t, testTransferCard(&deck, &forehand, CardJack.As(SuitClubs)))
+	assert.Nil(t, testTransferCard(&deck, &forehand, CardJack.As(SuitSpades)))
 	assert.Nil(t, testTransferCard(&deck, &forehand, CardAce.As(SuitHearts)))
 	assert.Nil(t, testTransferCard(&deck, &forehand, Card10.As(SuitHearts)))
 	assert.Nil(t, testTransferCard(&deck, &forehand, CardKing.As(SuitHearts)))
 	assert.Nil(t, testTransferCard(&deck, &forehand, CardQueen.As(SuitHearts)))
 	assert.Nil(t, testTransferCard(&deck, &forehand, Card7.As(SuitHearts)))
-	assert.Nil(t, testTransferCard(&deck, &forehand, CardAce.As(SuitBells)))
-	assert.Nil(t, testTransferCard(&deck, &forehand, Card10.As(SuitLeaves)))
-	assert.Nil(t, testTransferCard(&deck, &forehand, Card8.As(SuitAcorns)))
+	assert.Nil(t, testTransferCard(&deck, &forehand, CardAce.As(SuitDiamonds)))
+	assert.Nil(t, testTransferCard(&deck, &forehand, Card10.As(SuitSpades)))
+	assert.Nil(t, testTransferCard(&deck, &forehand, Card8.As(SuitClubs)))
 
 	assert.Equal(t, 20, len(deck))
 
-	assert.Nil(t, testTransferCard(&deck, &middlehand, CardJack.As(SuitBells)))
-	assert.Nil(t, testTransferCard(&deck, &middlehand, CardAce.As(SuitAcorns)))
-	assert.Nil(t, testTransferCard(&deck, &middlehand, Card10.As(SuitBells)))
-	assert.Nil(t, testTransferCard(&deck, &middlehand, CardQueen.As(SuitBells)))
-	assert.Nil(t, testTransferCard(&deck, &middlehand, Card9.As(SuitBells)))
-	assert.Nil(t, testTransferCard(&deck, &middlehand, CardQueen.As(SuitAcorns)))
-	assert.Nil(t, testTransferCard(&deck, &middlehand, Card7.As(SuitAcorns)))
+	assert.Nil(t, testTransferCard(&deck, &middlehand, CardJack.As(SuitDiamonds)))
+	assert.Nil(t, testTransferCard(&deck, &middlehand, CardAce.As(SuitClubs)))
+	assert.Nil(t, testTransferCard(&deck, &middlehand, Card10.As(SuitDiamonds)))
+	assert.Nil(t, testTransferCard(&deck, &middlehand, CardQueen.As(SuitDiamonds)))
+	assert.Nil(t, testTransferCard(&deck, &middlehand, Card9.As(SuitDiamonds)))
+	assert.Nil(t, testTransferCard(&deck, &middlehand, CardQueen.As(SuitClubs)))
+	assert.Nil(t, testTransferCard(&deck, &middlehand, Card7.As(SuitClubs)))
 	assert.Nil(t, testTransferCard(&deck, &middlehand, Card8.As(SuitHearts)))
-	assert.Nil(t, testTransferCard(&deck, &middlehand, Card9.As(SuitAcorns)))
-	assert.Nil(t, testTransferCard(&deck, &middlehand, CardKing.As(SuitAcorns)))
+	assert.Nil(t, testTransferCard(&deck, &middlehand, Card9.As(SuitClubs)))
+	assert.Nil(t, testTransferCard(&deck, &middlehand, CardKing.As(SuitClubs)))
 
 	assert.Equal(t, 10, len(deck))
 
@@ -112,7 +112,7 @@ func TestPlayingStateInit(t *testing.T) {
 	t.Run("pushed cards are added to player won cards", func(t *testing.T) {
 		ts := testPlayingState(t)
 		wonCards := ts.s.GetWonCards(PlayerInitialForehand)
-		assert.Equal(t, CardSet{Card{Card7, SuitBells}, Card{Card8, SuitBells}}, wonCards)
+		assert.Equal(t, CardSet{Card{Card7, SuitDiamonds}, Card{Card8, SuitDiamonds}}, wonCards)
 	})
 
 	t.Run("pushed cards are not added to other players won cards", func(t *testing.T) {
@@ -128,40 +128,40 @@ func TestPlayingStateInit(t *testing.T) {
 func TestPlayTrick(t *testing.T) {
 	t.Run("playing a card removes it from the hand", func(t *testing.T) {
 		ts := testPlayingState(t)
-		card := CardJack.As(SuitLeaves)
+		card := CardJack.As(SuitSpades)
 		assert.Nil(t, ts.s.Play(PlayerInitialForehand, card))
 		assert.False(t, ts.s.GetHand(PlayerInitialForehand).Contains(card))
 	})
 
 	t.Run("playing a card adds it to the table", func(t *testing.T) {
 		ts := testPlayingState(t)
-		card := CardJack.As(SuitLeaves)
+		card := CardJack.As(SuitSpades)
 		assert.Nil(t, ts.s.Play(PlayerInitialForehand, card))
 		assert.True(t, ts.s.GetTable().Contains(card))
 	})
 
 	t.Run("playing a card advances current player", func(t *testing.T) {
 		ts := testPlayingState(t)
-		card := CardJack.As(SuitLeaves)
+		card := CardJack.As(SuitSpades)
 		assert.Nil(t, ts.s.Play(PlayerInitialForehand, card))
 		assert.Equal(t, PlayerInitialMiddlehand, ts.s.GetCurrentPlayer())
 	})
 
 	t.Run("reject playing card not in hand", func(t *testing.T) {
 		ts := testPlayingState(t)
-		card := CardJack.As(SuitBells)
+		card := CardJack.As(SuitDiamonds)
 		assert.Equal(t, ErrCardNotPresent, ts.s.Play(PlayerInitialForehand, card))
 	})
 
 	t.Run("reject playing card by wrong player", func(t *testing.T) {
 		ts := testPlayingState(t)
-		card := CardJack.As(SuitBells)
+		card := CardJack.As(SuitDiamonds)
 		assert.Equal(t, ErrNotYourTurn, ts.s.Play(PlayerInitialMiddlehand, card))
 	})
 
 	t.Run("play complete trick", func(t *testing.T) {
 		ts := testPlayingState(t)
-		card1 := CardJack.As(SuitLeaves)
+		card1 := CardJack.As(SuitSpades)
 		card2 := Card8.As(SuitHearts)
 		card3 := Card9.As(SuitHearts)
 		assert.Nil(t, ts.s.Play(PlayerInitialForehand, card1))
@@ -179,9 +179,9 @@ func TestPlayTrick(t *testing.T) {
 
 	t.Run("play complete with change of forehandship", func(t *testing.T) {
 		ts := testPlayingState(t)
-		card1 := Card8.As(SuitAcorns)
-		card2 := CardKing.As(SuitAcorns)
-		card3 := Card10.As(SuitAcorns)
+		card1 := Card8.As(SuitClubs)
+		card2 := CardKing.As(SuitClubs)
+		card3 := Card10.As(SuitClubs)
 		assert.Nil(t, ts.s.Play(PlayerInitialForehand, card1))
 		assert.Nil(t, ts.s.Play(PlayerInitialMiddlehand, card2))
 		assert.Nil(t, ts.s.Play(PlayerInitialRearhand, card3))
@@ -212,9 +212,9 @@ func TestPlayTrick(t *testing.T) {
 		assert.Equal(t, CardSet{}, ts.s.GetWonCards(PlayerInitialForehand)[2:])
 		assert.Equal(t, PlayerInitialRearhand, ts.s.GetCurrentPlayer())
 
-		card1 = Card10.As(SuitAcorns)
-		card2 = Card8.As(SuitAcorns)
-		card3 = CardAce.As(SuitAcorns)
+		card1 = Card10.As(SuitClubs)
+		card2 = Card8.As(SuitClubs)
+		card3 = CardAce.As(SuitClubs)
 		assert.Nil(t, ts.s.Play(PlayerInitialRearhand, card1))
 		assert.Nil(t, ts.s.Play(PlayerInitialForehand, card2))
 		assert.Nil(t, ts.s.Play(PlayerInitialMiddlehand, card3))
@@ -230,17 +230,17 @@ func TestPlayTrick(t *testing.T) {
 
 	t.Run("reject missing suit following", func(t *testing.T) {
 		ts := testPlayingState(t)
-		card1 := CardJack.As(SuitLeaves)
-		card2 := Card9.As(SuitBells)
+		card1 := CardJack.As(SuitSpades)
+		card2 := Card9.As(SuitDiamonds)
 		assert.Nil(t, ts.s.Play(PlayerInitialForehand, card1))
 		assert.Equal(t, ErrMustFollowSuit, ts.s.Play(PlayerInitialMiddlehand, card2))
 	})
 
 	t.Run("allow diverging from suit if impossible", func(t *testing.T) {
 		ts := testPlayingState(t)
-		card1 := Card10.As(SuitLeaves)
-		card2 := Card10.As(SuitBells)
-		card3 := CardAce.As(SuitLeaves)
+		card1 := Card10.As(SuitSpades)
+		card2 := Card10.As(SuitDiamonds)
+		card3 := CardAce.As(SuitSpades)
 		assert.Nil(t, ts.s.Play(PlayerInitialForehand, card1))
 		assert.Nil(t, ts.s.Play(PlayerInitialMiddlehand, card2))
 		assert.Nil(t, ts.s.Play(PlayerInitialRearhand, card3))

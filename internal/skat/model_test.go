@@ -65,10 +65,10 @@ func TestGameModifier(t *testing.T) {
 }
 
 func TestGameTypeEnum(t *testing.T) {
-	assert.Equal(t, GameType(1), GameTypeBells)
+	assert.Equal(t, GameType(1), GameTypeDiamonds)
 	assert.Equal(t, GameType(2), GameTypeHearts)
-	assert.Equal(t, GameType(3), GameTypeLeaves)
-	assert.Equal(t, GameType(4), GameTypeAcorns)
+	assert.Equal(t, GameType(3), GameTypeSpades)
+	assert.Equal(t, GameType(4), GameTypeClubs)
 }
 
 func TestCardTypeValue(t *testing.T) {
@@ -83,7 +83,7 @@ func TestCardTypeValue(t *testing.T) {
 }
 
 func TestGameModifierValidForGame(t *testing.T) {
-	suitGames := []GameType{GameTypeAcorns, GameTypeBells, GameTypeHearts, GameTypeLeaves, GameTypeGrand}
+	suitGames := []GameType{GameTypeClubs, GameTypeDiamonds, GameTypeHearts, GameTypeSpades, GameTypeGrand}
 
 	t.Run("announcement without modifiers is allowed for all game types", func(t *testing.T) {
 		for _, game := range StandardGameTypes {
@@ -178,7 +178,7 @@ func TestCardOperations(t *testing.T) {
 		assert.Nil(t, err)
 		assert.False(t, cardsAfter.Contains(toPop))
 		assert.True(t, cardsAfter.Contains(Card{Card9, SuitHearts}))
-		assert.True(t, cardsAfter.Contains(Card{Card10, SuitBells}))
+		assert.True(t, cardsAfter.Contains(Card{Card10, SuitDiamonds}))
 	})
 
 	t.Run("pop returns no such card if not in set", func(t *testing.T) {
@@ -197,17 +197,17 @@ func TestCardOperations(t *testing.T) {
 
 func TestCardEffectiveSuit(t *testing.T) {
 	suitMap := map[Suit]EffectiveSuit{
-		SuitBells:  EffectiveSuitBells,
-		SuitHearts: EffectiveSuitHearts,
-		SuitLeaves: EffectiveSuitLeaves,
-		SuitAcorns: EffectiveSuitAcorns,
+		SuitDiamonds: EffectiveSuitDiamonds,
+		SuitHearts:   EffectiveSuitHearts,
+		SuitSpades:   EffectiveSuitSpades,
+		SuitClubs:    EffectiveSuitClubs,
 	}
 
 	gameTypeMap := map[GameType]Suit{
-		GameTypeBells:  SuitBells,
-		GameTypeHearts: SuitHearts,
-		GameTypeLeaves: SuitLeaves,
-		GameTypeAcorns: SuitAcorns,
+		GameTypeDiamonds: SuitDiamonds,
+		GameTypeHearts:   SuitHearts,
+		GameTypeSpades:   SuitSpades,
+		GameTypeClubs:    SuitClubs,
 	}
 
 	t.Run("grand leaves suits intact but maps jacks to trump", func(t *testing.T) {
@@ -254,10 +254,10 @@ func TestCardEffectiveSuit(t *testing.T) {
 
 func TestCardRelativePower(t *testing.T) {
 	gameTypeMap := map[GameType]Suit{
-		GameTypeBells:  SuitBells,
-		GameTypeHearts: SuitHearts,
-		GameTypeLeaves: SuitLeaves,
-		GameTypeAcorns: SuitAcorns,
+		GameTypeDiamonds: SuitDiamonds,
+		GameTypeHearts:   SuitHearts,
+		GameTypeSpades:   SuitSpades,
+		GameTypeClubs:    SuitClubs,
 	}
 
 	t.Run("grand jacks", func(t *testing.T) {
@@ -336,10 +336,10 @@ func TestCardRelativePower(t *testing.T) {
 			for i, cardType := range CardTypes[:len(CardTypes)-1] {
 				expectedCardOrder[i] = cardType.As(trumpSuit)
 			}
-			expectedCardOrder[len(CardTypes)-1] = CardJack.As(SuitBells)
+			expectedCardOrder[len(CardTypes)-1] = CardJack.As(SuitDiamonds)
 			expectedCardOrder[len(CardTypes)] = CardJack.As(SuitHearts)
-			expectedCardOrder[len(CardTypes)+1] = CardJack.As(SuitLeaves)
-			expectedCardOrder[len(CardTypes)+2] = CardJack.As(SuitAcorns)
+			expectedCardOrder[len(CardTypes)+1] = CardJack.As(SuitSpades)
+			expectedCardOrder[len(CardTypes)+2] = CardJack.As(SuitClubs)
 
 			prevCard := expectedCardOrder[0]
 			for _, card := range expectedCardOrder[1:] {
@@ -356,9 +356,9 @@ func TestCardRelativePower(t *testing.T) {
 
 func TestTrickEvaluation(t *testing.T) {
 	t.Run("effective suit is the suit of the first card", func(t *testing.T) {
-		tr := Trick{Card7.As(SuitHearts), Card8.As(SuitBells), Card9.As(SuitAcorns)}
+		tr := Trick{Card7.As(SuitHearts), Card8.As(SuitDiamonds), Card9.As(SuitClubs)}
 		assert.Equal(t, EffectiveSuitHearts, tr.EffectiveSuit(GameTypeGrand))
-		assert.Equal(t, EffectiveSuitHearts, tr.EffectiveSuit(GameTypeBells))
+		assert.Equal(t, EffectiveSuitHearts, tr.EffectiveSuit(GameTypeDiamonds))
 		assert.Equal(t, EffectiveSuitTrumps, tr.EffectiveSuit(GameTypeHearts))
 	})
 
@@ -384,12 +384,12 @@ func TestTrickEvaluation(t *testing.T) {
 		assert.Equal(
 			t,
 			2,
-			Trick{Card7.As(SuitHearts), Card9.As(SuitBells), Card8.As(SuitHearts)}.Taker(GameTypeGrand),
+			Trick{Card7.As(SuitHearts), Card9.As(SuitDiamonds), Card8.As(SuitHearts)}.Taker(GameTypeGrand),
 		)
 		assert.Equal(
 			t,
 			1,
-			Trick{Card7.As(SuitHearts), Card8.As(SuitHearts), Card9.As(SuitBells)}.Taker(GameTypeGrand),
+			Trick{Card7.As(SuitHearts), Card8.As(SuitHearts), Card9.As(SuitDiamonds)}.Taker(GameTypeGrand),
 		)
 	})
 
@@ -397,17 +397,17 @@ func TestTrickEvaluation(t *testing.T) {
 		assert.Equal(
 			t,
 			1,
-			Trick{Card7.As(SuitHearts), CardJack.As(SuitBells), Card8.As(SuitHearts)}.Taker(GameTypeGrand),
+			Trick{Card7.As(SuitHearts), CardJack.As(SuitDiamonds), Card8.As(SuitHearts)}.Taker(GameTypeGrand),
 		)
 		assert.Equal(
 			t,
 			2,
-			Trick{Card7.As(SuitHearts), Card8.As(SuitHearts), CardJack.As(SuitBells)}.Taker(GameTypeGrand),
+			Trick{Card7.As(SuitHearts), Card8.As(SuitHearts), CardJack.As(SuitDiamonds)}.Taker(GameTypeGrand),
 		)
 		assert.Equal(
 			t,
 			2,
-			Trick{Card7.As(SuitHearts), Card8.As(SuitHearts), Card9.As(SuitBells)}.Taker(GameTypeBells),
+			Trick{Card7.As(SuitHearts), Card8.As(SuitHearts), Card9.As(SuitDiamonds)}.Taker(GameTypeDiamonds),
 		)
 	})
 
@@ -415,7 +415,7 @@ func TestTrickEvaluation(t *testing.T) {
 		assert.Equal(
 			t,
 			1,
-			Trick{Card7.As(SuitHearts), Card9.As(SuitBells), Card8.As(SuitBells)}.Taker(GameTypeBells),
+			Trick{Card7.As(SuitHearts), Card9.As(SuitDiamonds), Card8.As(SuitDiamonds)}.Taker(GameTypeDiamonds),
 		)
 	})
 
@@ -423,7 +423,7 @@ func TestTrickEvaluation(t *testing.T) {
 		assert.Equal(
 			t,
 			2,
-			Trick{Card10.As(SuitHearts), CardJack.As(SuitBells), CardKing.As(SuitHearts)}.Taker(GameTypeNull),
+			Trick{Card10.As(SuitHearts), CardJack.As(SuitDiamonds), CardKing.As(SuitHearts)}.Taker(GameTypeNull),
 		)
 	})
 }
