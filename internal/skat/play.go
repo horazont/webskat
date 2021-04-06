@@ -9,7 +9,7 @@ var (
 )
 
 type PlayingPlayerState struct {
-	Hand     *CardSet
+	Hand     CardSet
 	WonCards CardSet
 }
 
@@ -33,15 +33,15 @@ func NewPlayingState(declarer int, gameType GameType, hands [3]*CardSet, pushedC
 		lastTrickWinner: PlayerNone,
 		players: [3]PlayingPlayerState{
 			PlayingPlayerState{
-				Hand:     hands[0],
+				Hand:     hands[0].Copy(),
 				WonCards: make(CardSet, 0),
 			},
 			PlayingPlayerState{
-				Hand:     hands[1],
+				Hand:     hands[1].Copy(),
 				WonCards: make(CardSet, 0),
 			},
 			PlayingPlayerState{
-				Hand:     hands[2],
+				Hand:     hands[2].Copy(),
 				WonCards: make(CardSet, 0),
 			},
 		},
@@ -89,7 +89,7 @@ func (s *PlayingState) Play(player int, card Card) (err error) {
 		// If the effective suit of the card does not match what’s on the
 		// table...
 		if cardSuit != tableSuit {
-			for _, card := range *hand {
+			for _, card := range hand {
 				if card.EffectiveSuit(s.gameType) == tableSuit {
 					// ... we cannot allow it if there is any possible card
 					// to be played.
@@ -107,7 +107,7 @@ func (s *PlayingState) Play(player int, card Card) (err error) {
 	if err != nil {
 		return err
 	}
-	*s.players[player].Hand = newHand
+	s.players[player].Hand = newHand
 	s.table = newTable
 
 	if s.current == PlayerInitialRearhand {

@@ -240,12 +240,20 @@ func EvaluateWonCards(wonCards [3]CardSet, declarer int) (modifiers GameModifier
 	return modifiers, declarerScore, defenderScore
 }
 
-func EvaluateGame(gameBaseValue int, gameValueFactor int, declarerScore int, declarerBid int) (declarerWon bool, gameValue int, lossReason string) {
+func EvaluateGame(gameBaseValue int, gameValueFactor int, declarerScore int, declarerBid int, modifiers GameModifier) (declarerWon bool, gameValue int, lossReason string) {
 	gameValue = gameBaseValue * gameValueFactor
-	if gameValue > declarerBid {
+	if gameValue < declarerBid {
 		// overbid!
 		gameValue = gameBaseValue * ((declarerBid + gameBaseValue - 1) / gameBaseValue)
 		return false, gameValue, LossReasonOverbid
+	}
+
+	if modifiers.Test(GameModifierSchwarzAnnounced) && !modifiers.Test(GameModifierSchwarz) {
+		return false, gameValue, LossReasonNoSchwarz
+	}
+
+	if modifiers.Test(GameModifierSchneiderAnnounced) && !modifiers.Test(GameModifierSchneider) {
+		return false, gameValue, LossReasonNoSchneider
 	}
 
 	if declarerScore <= 60 {

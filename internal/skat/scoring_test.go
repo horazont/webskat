@@ -479,6 +479,7 @@ func TestEvaluateGame(t *testing.T) {
 			2,
 			120,
 			18,
+			NoGameModifiers,
 		)
 		assert.True(t, won)
 		assert.Equal(t, 18, gameValue)
@@ -491,6 +492,7 @@ func TestEvaluateGame(t *testing.T) {
 			2,
 			60,
 			18,
+			NoGameModifiers,
 		)
 		assert.False(t, won)
 		assert.Equal(t, 18, gameValue)
@@ -500,9 +502,10 @@ func TestEvaluateGame(t *testing.T) {
 	t.Run("overbid rounds up game value", func(t *testing.T) {
 		won, gameValue, reason := EvaluateGame(
 			9,
-			3,
+			2,
 			70,
 			20,
+			NoGameModifiers,
 		)
 		assert.False(t, won)
 		assert.Equal(t, 27, gameValue)
@@ -510,9 +513,10 @@ func TestEvaluateGame(t *testing.T) {
 
 		won, gameValue, reason = EvaluateGame(
 			9,
-			3,
+			2,
 			70,
 			18,
+			NoGameModifiers,
 		)
 		assert.Equal(t, 18, gameValue)
 	})
@@ -520,11 +524,61 @@ func TestEvaluateGame(t *testing.T) {
 	t.Run("overbid takes precedence over point loss", func(t *testing.T) {
 		won, _, reason := EvaluateGame(
 			9,
-			3,
+			2,
 			30,
-			18,
+			20,
+			NoGameModifiers,
 		)
 		assert.False(t, won)
 		assert.Equal(t, LossReasonOverbid, reason)
+	})
+
+	t.Run("overbid takes precedence over modifier loss", func(t *testing.T) {
+		won, _, reason := EvaluateGame(
+			9,
+			2,
+			30,
+			20,
+			GameModifierSchneiderAnnounced,
+		)
+		assert.False(t, won)
+		assert.Equal(t, LossReasonOverbid, reason)
+	})
+
+	t.Run("announced schneider but did not make it", func(t *testing.T) {
+		won, gameValue, reason := EvaluateGame(
+			9,
+			2,
+			120,
+			18,
+			GameModifierSchneiderAnnounced,
+		)
+		assert.False(t, won)
+		assert.Equal(t, 18, gameValue)
+		assert.Equal(t, LossReasonNoSchneider, reason)
+	})
+
+	t.Run("announced schwarz but did not make it", func(t *testing.T) {
+		won, gameValue, reason := EvaluateGame(
+			9,
+			2,
+			120,
+			18,
+			GameModifierSchwarzAnnounced.Normalized(),
+		)
+		assert.False(t, won)
+		assert.Equal(t, 18, gameValue)
+		assert.Equal(t, LossReasonNoSchwarz, reason)
+
+		won, gameValue, reason = EvaluateGame(
+			9,
+			2,
+			120,
+			18,
+			GameModifierSchwarzAnnounced.Normalized().With(GameModifierSchneider),
+		)
+		assert.False(t, won)
+		assert.Equal(t, 18, gameValue)
+		assert.Equal(t, LossReasonNoSchwarz, reason)
 	})
 }

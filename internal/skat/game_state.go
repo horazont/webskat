@@ -58,20 +58,23 @@ type GameState struct {
 	serverSeed          []byte
 	dealerSeed          []byte
 	dealerLookingAtHand int
+	scoring             ScoreDefinition
 
-	skat      CardSet
-	players   [3]CommonPlayerState
-	modifiers GameModifier
+	skat       CardSet
+	players    [3]CommonPlayerState
+	modifiers  GameModifier
+	lossReason string
 
 	biddingState *BiddingState
 	playingState *PlayingState
 }
 
-func NewGame(withDealer bool) *GameState {
+func NewGame(withDealer bool, scoring *ScoreDefinition) *GameState {
 	return &GameState{
 		withDealer:          withDealer,
 		phase:               PhaseInit,
 		dealerLookingAtHand: PlayerNone,
+		scoring:             *scoring,
 		modifiers:           GameModifierHand,
 	}
 }
@@ -231,12 +234,11 @@ func (g *GameState) TakeSkat(player int) error {
 	if declarer != player {
 		return ErrNotYourTurn
 	}
-	if g.skat == nil {
+	if !g.modifiers.Test(GameModifierHand) {
 		return ErrWrongPhase
 	}
 	g.modifiers = g.modifiers.Without(GameModifierHand)
 	g.players[declarer].Hand = append(g.players[declarer].Hand, g.skat...)
-	g.skat = nil
 	return nil
 }
 
@@ -276,7 +278,6 @@ func (g *GameState) Declare(player int, gameType GameType, announcedModifiers Ga
 		skatCards = cardsToPush
 	} else {
 		skatCards = g.skat
-		g.skat = nil
 	}
 
 	g.players[player].Hand = newHand
@@ -291,10 +292,21 @@ func (g *GameState) Declare(player int, gameType GameType, announcedModifiers Ga
 		},
 		skatCards,
 	)
+	// now for the declarer, we add the skat to the hand for post-game
+	// evaluation
+	g.players[player].Hand, _ = g.players[player].Hand.Push(
+		g.skat[0],
+	)
+	g.players[player].Hand, _ = g.players[player].Hand.Push(
+		g.skat[1],
+	)
 	return nil
 }
 
 func (g *GameState) GetHand(player int) CardSet {
+	if g.phase == PhasePlaying {
+		return g.playingState.GetHand(player)
+	}
 	return g.players[player].Hand.Copy()
 }
 
@@ -310,6 +322,14 @@ func (g *GameState) Playing() *PlayingState {
 	return g.playingState
 }
 
+func (g *GameState) GetScore(player int) int {
+	return g.players[player].Score
+}
+
+func (g *GameState) GetLossReason() string {
+	return g.lossReason
+}
+
 func (g *GameState) EvaluateGame() error {
 	if g.phase != PhasePlaying {
 		return ErrWrongPhase
@@ -317,5 +337,38 @@ func (g *GameState) EvaluateGame() error {
 	if len(g.playingState.GetHand(PlayerInitialForehand)) > 0 {
 		return ErrWrongPhase
 	}
-	return ErrNotImplemented
+	declarer := g.biddingState.Declarer()
+	resultModifiers, declarerScore, _ := EvaluateWonCards(
+		[3]CardSet{
+			g.playingState.GetWonCards(PlayerInitialForehand),
+			g.playingState.GetWonCards(PlayerInitialMiddlehand),
+			g.playingState.GetWonCards(PlayerInitialRearhand),
+		},
+		declarer,
+	)
+	modifiers := g.modifiers | resultModifiers
+	baseValue, factor := CalculateGameValue(
+		g.players[declarer].Hand,
+		g.playingState.GameType(),
+		modifiers,
+	)
+	declarerWon, gameValue, lossReason := EvaluateGame(
+		baseValue,
+		factor,
+		declarerScore,
+		g.biddingState.CalledGameValue(),
+		modifiers,
+	)
+	playerScores := g.scoring.CalculateScore(
+		gameValue,
+		declarer,
+		declarerWon,
+	)
+	g.modifiers = modifiers
+	for i := range g.players {
+		g.players[i].Score = playerScores[i]
+	}
+	g.lossReason = lossReason
+	g.phase = PhaseScored
+	return nil
 }

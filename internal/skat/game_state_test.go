@@ -7,7 +7,7 @@ import (
 )
 
 func testGetInitPhaseGame(t *testing.T) *GameState {
-	g := NewGame(false)
+	g := NewGame(false, LeagueScoreDefinition())
 	assert.Equal(t, PhaseInit, g.Phase())
 	return g
 }
@@ -37,6 +37,33 @@ func testGetDeclarationPhaseGame(t *testing.T) *GameState {
 func testGetPlayingPhaseGame(t *testing.T, gameType GameType) *GameState {
 	g := testGetDeclarationPhaseGame(t)
 	assert.Nil(t, g.Declare(PlayerInitialMiddlehand, gameType, NoGameModifiers, nil))
+	return g
+}
+
+func testGetDonePlayingPhaseGame(t *testing.T, gameType GameType) *GameState {
+	g := testGetPlayingPhaseGame(t, gameType)
+	play := g.Playing()
+	for i := 0; i < 10; i = i + 1 {
+		// 10 tricks
+		player := play.GetCurrentPlayer()
+		assert.Nil(t, play.Play(player, play.GetHand(player)[0]))
+		for j := 0; j < 2; j = j + 1 {
+			// 2 non-forehand players
+			player := play.GetCurrentPlayer()
+			hand := play.GetHand(player)
+			success := false
+			for _, card := range hand {
+				if play.Play(player, card) == nil {
+					success = true
+					break
+				}
+			}
+			assert.True(t, success)
+		}
+	}
+	assert.Equal(t, 0, len(g.GetHand(PlayerInitialForehand)))
+	assert.Equal(t, 0, len(g.GetHand(PlayerInitialMiddlehand)))
+	assert.Equal(t, 0, len(g.GetHand(PlayerInitialRearhand)))
 	return g
 }
 
@@ -151,7 +178,6 @@ func TestGameStateDeclarationPhase(t *testing.T) {
 		skat := g.GetSkat()
 
 		assert.Nil(t, g.TakeSkat(PlayerInitialMiddlehand))
-		assert.Equal(t, 0, len(g.GetSkat()))
 		hand := g.GetHand(PlayerInitialMiddlehand)
 		assert.Equal(t, 12, len(hand))
 		assert.Equal(t, skat[0], hand[10])
@@ -249,5 +275,72 @@ func TestGameStatePlayingPhase(t *testing.T) {
 		assert.Equal(t, 2, len(g.Playing().GetWonCards(g.Playing().Declarer())))
 		assert.Equal(t, PlayerInitialForehand, g.Playing().GetCurrentPlayer())
 		assert.Equal(t, GameTypeHearts, g.Playing().GameType())
+	})
+}
+
+func TestGameStatePlayingPhaseCompleted(t *testing.T) {
+	t.Run("evaluate game: standard bells", func(t *testing.T) {
+		g := testGetDonePlayingPhaseGame(t, GameTypeBells)
+		assert.Nil(t, g.EvaluateGame())
+		assert.Equal(t, PhaseScored, g.Phase())
+		assert.Equal(t, 10, len(g.GetHand(PlayerInitialForehand)))
+		assert.Equal(t, 12, len(g.GetHand(PlayerInitialMiddlehand)))
+		assert.Equal(t, 10, len(g.GetHand(PlayerInitialRearhand)))
+		assert.Equal(t, 40, g.GetScore(PlayerInitialForehand))
+		assert.Equal(t, -144, g.GetScore(PlayerInitialMiddlehand))
+		assert.Equal(t, 40, g.GetScore(PlayerInitialRearhand))
+		assert.Equal(t, LossReasonNotEnoughPoints, g.GetLossReason())
+	})
+
+	t.Run("evaluate game: standard hearts", func(t *testing.T) {
+		g := testGetDonePlayingPhaseGame(t, GameTypeHearts)
+		assert.Nil(t, g.EvaluateGame())
+		assert.Equal(t, PhaseScored, g.Phase())
+		assert.Equal(t, 10, len(g.GetHand(PlayerInitialForehand)))
+		assert.Equal(t, 12, len(g.GetHand(PlayerInitialMiddlehand)))
+		assert.Equal(t, 10, len(g.GetHand(PlayerInitialRearhand)))
+		assert.Equal(t, 40, g.GetScore(PlayerInitialForehand))
+		assert.Equal(t, -260, g.GetScore(PlayerInitialMiddlehand))
+		assert.Equal(t, 40, g.GetScore(PlayerInitialRearhand))
+		assert.Equal(t, LossReasonNotEnoughPoints, g.GetLossReason())
+	})
+
+	t.Run("evaluate game: standard leaves", func(t *testing.T) {
+		g := testGetDonePlayingPhaseGame(t, GameTypeLeaves)
+		assert.Nil(t, g.EvaluateGame())
+		assert.Equal(t, PhaseScored, g.Phase())
+		assert.Equal(t, 10, len(g.GetHand(PlayerInitialForehand)))
+		assert.Equal(t, 12, len(g.GetHand(PlayerInitialMiddlehand)))
+		assert.Equal(t, 10, len(g.GetHand(PlayerInitialRearhand)))
+		assert.Equal(t, 40, g.GetScore(PlayerInitialForehand))
+		assert.Equal(t, -154, g.GetScore(PlayerInitialMiddlehand))
+		assert.Equal(t, 40, g.GetScore(PlayerInitialRearhand))
+		assert.Equal(t, LossReasonNotEnoughPoints, g.GetLossReason())
+	})
+
+	t.Run("evaluate game: standard acorns", func(t *testing.T) {
+		g := testGetDonePlayingPhaseGame(t, GameTypeAcorns)
+		assert.Nil(t, g.EvaluateGame())
+		assert.Equal(t, PhaseScored, g.Phase())
+		assert.Equal(t, 10, len(g.GetHand(PlayerInitialForehand)))
+		assert.Equal(t, 12, len(g.GetHand(PlayerInitialMiddlehand)))
+		assert.Equal(t, 10, len(g.GetHand(PlayerInitialRearhand)))
+		assert.Equal(t, 40, g.GetScore(PlayerInitialForehand))
+		assert.Equal(t, -240, g.GetScore(PlayerInitialMiddlehand))
+		assert.Equal(t, 40, g.GetScore(PlayerInitialRearhand))
+		assert.Equal(t, LossReasonNotEnoughPoints, g.GetLossReason())
+	})
+
+	t.Run("evaluate game: standard grand", func(t *testing.T) {
+		g := testGetDonePlayingPhaseGame(t, GameTypeGrand)
+		assert.Nil(t, g.EvaluateGame())
+		assert.Equal(t, PhaseScored, g.Phase())
+		assert.Equal(t, 10, len(g.GetHand(PlayerInitialForehand)))
+		assert.Equal(t, 12, len(g.GetHand(PlayerInitialMiddlehand)))
+		assert.Equal(t, 10, len(g.GetHand(PlayerInitialRearhand)))
+		assert.Equal(t, 40, g.GetScore(PlayerInitialForehand))
+		assert.Equal(t, -384, g.GetScore(PlayerInitialMiddlehand))
+		assert.Equal(t, 40, g.GetScore(PlayerInitialRearhand))
+		assert.Equal(t, LossReasonNotEnoughPoints, g.GetLossReason())
 	})
 }
