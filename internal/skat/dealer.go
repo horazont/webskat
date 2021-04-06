@@ -82,15 +82,42 @@ type Dealer interface {
 	DrawCards(cards []Card, ncards uint8) (remainingCards []Card, drawnCards []Card, err error)
 }
 
+func getModfactorFromMax(nmax uint8) uint8 {
+	if nmax >= 128 {
+		return 0
+	} else if nmax >= 64 {
+		return 128
+	} else if nmax >= 32 {
+		return 64
+	} else if nmax >= 16 {
+		return 32
+	} else if nmax >= 8 {
+		return 16
+	} else if nmax >= 4 {
+		return 8
+	} else if nmax >= 2 {
+		return 4
+	} else if nmax >= 1 {
+		return 2
+	} else {
+		return 1
+	}
+}
+
 func PullUint8FromBytesExact(r io.Reader, nmax uint8) (uint8, error) {
+	if nmax == 0 {
+		return 0, nil
+	}
 	buf := make([]byte, 1)
+	mod := getModfactorFromMax(nmax)
 	for {
 		nread, err := r.Read(buf)
 		if nread != 1 {
 			return 0, err
 		}
-		if buf[0] <= nmax {
-			return buf[0], nil
+		val := buf[0] % mod
+		if val <= nmax {
+			return val, nil
 		}
 	}
 }
