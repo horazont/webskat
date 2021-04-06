@@ -2,6 +2,7 @@ package skat
 
 import (
 	"errors"
+	"strings"
 )
 
 type GameType int
@@ -110,12 +111,48 @@ func (c CardType) Value() int {
 	return 0
 }
 
+func (c CardType) Pretty() string {
+	switch c {
+	case Card7:
+		return "7"
+	case Card8:
+		return "8"
+	case Card9:
+		return "9"
+	case Card10:
+		return "0"
+	case CardJack:
+		return "J"
+	case CardQueen:
+		return "Q"
+	case CardKing:
+		return "K"
+	case CardAce:
+		return "A"
+	}
+	return "-"
+}
+
 func (c CardType) As(suit Suit) Card {
 	return Card{c, suit}
 }
 
 func (s Suit) As(c CardType) Card {
 	return Card{c, s}
+}
+
+func (s Suit) Pretty() string {
+	switch s {
+	case SuitBells:
+		return "♦"
+	case SuitHearts:
+		return "♥"
+	case SuitLeaves:
+		return "♠"
+	case SuitAcorns:
+		return "♣"
+	}
+	return "-"
 }
 
 type Card struct {
@@ -125,6 +162,10 @@ type Card struct {
 
 func (c Card) Value() int {
 	return c.Type.Value()
+}
+
+func (c Card) Pretty() string {
+	return c.Suit.Pretty() + c.Type.Pretty()
 }
 
 func (c Card) EffectiveSuit(gameType GameType) EffectiveSuit {
@@ -329,4 +370,15 @@ func (cs CardSet) Value() (sum int) {
 		sum = sum + card.Value()
 	}
 	return sum
+}
+
+func (cs CardSet) Pretty() string {
+	var sb strings.Builder
+	for i, card := range cs {
+		if i > 0 {
+			sb.WriteString(",")
+		}
+		sb.WriteString(card.Pretty())
+	}
+	return sb.String()
 }
