@@ -141,11 +141,11 @@ func (g *GameState) ComposedSeed() ([]byte, error) {
 	return result, nil
 }
 
-func (g *GameState) dealRoundOfHands(cards []Card, dealer Dealer, n uint8) ([]Card, error) {
+func (g *GameState) dealRoundOfHands(cards []Card, n int) ([]Card, error) {
 	var err error
 	for i := 0; i < 3; i = i + 1 {
 		var dealt []Card
-		cards, dealt, err = dealer.DrawCards(cards, n)
+		cards, dealt, err = DrawCards(cards, n)
 		if err != nil {
 			return nil, err
 		}
@@ -165,25 +165,26 @@ func (g *GameState) Deal() error {
 	if err != nil {
 		return err
 	}
-	dealer, err := NewDealer(seed)
+
+	deck := NewCardDeck()
+	err = ShuffleDeckWithSeed(seed, &deck)
 	if err != nil {
 		return err
 	}
 
-	deck := NewCardDeck()
-	deck, err = g.dealRoundOfHands(deck, dealer, 3)
+	deck, err = g.dealRoundOfHands(deck, 3)
 	if err != nil {
 		return err
 	}
-	deck, g.skat, err = dealer.DrawCards(deck, 2)
+	deck, g.skat, err = DrawCards(deck, 2)
 	if err != nil {
 		return err
 	}
-	deck, err = g.dealRoundOfHands(deck, dealer, 4)
+	deck, err = g.dealRoundOfHands(deck, 4)
 	if err != nil {
 		return err
 	}
-	deck, err = g.dealRoundOfHands(deck, dealer, 3)
+	deck, err = g.dealRoundOfHands(deck, 3)
 	if err != nil {
 		return err
 	}

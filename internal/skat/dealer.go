@@ -1,85 +1,46 @@
 package skat
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/sha512"
-	"encoding/binary"
 	"errors"
 	"io"
 )
 
 var (
-	ErrNotEnoughCards = errors.New("fewer cards in deck than requested")
+	ErrNotEnoughCards      = errors.New("fewer cards in deck than requested")
+	ErrIncorrectSeedLength = errors.New("incorrect seed length")
+	ErrTooManyItems        = errors.New("shuffle is restricted to 256 items at most")
 )
 
-type RandomBitstream struct {
-	iv           uint64
-	counter      uint64
-	blockcipher  cipher.Block
-	currentBlock io.Reader
+type NullReader struct{}
+
+func (r *NullReader) Read(dst []byte) (n int, err error) {
+	for i := range dst {
+		dst[i] = 0
+	}
+	return len(dst), nil
 }
 
-func SeededBitstream(seed []byte) (*RandomBitstream, error) {
-	h := sha512.Sum512_256(seed)
-	key := h[:16]
-	iv_binary := h[16:24]
-	iv := binary.LittleEndian.Uint64(iv_binary)
-	blockcipher, err := aes.NewCipher(key)
+// Create an io.Reader which generates pseudorandom bytes from a given seed
+//
+// The seed must be exactly 32 bytes long.
+func SeededBitstream(seed []byte) (io.Reader, error) {
+	if len(seed) != 32 {
+		return nil, ErrIncorrectSeedLength
+	}
+	blockCipher, err := aes.NewCipher(seed[:16])
 	if err != nil {
 		return nil, err
 	}
-	return &RandomBitstream{
-		iv:           iv,
-		counter:      0,
-		blockcipher:  blockcipher,
-		currentBlock: nil,
+	return &cipher.StreamReader{
+		S: cipher.NewCTR(
+			blockCipher,
+			seed[16:],
+		),
+		R: &NullReader{},
 	}, nil
-}
-
-func (rb *RandomBitstream) Read(p []byte) (n int, err error) {
-	if rb.currentBlock == nil {
-		err = rb.generateNewBlock()
-		if err != nil {
-			return 0, err
-		}
-	}
-	n, err = rb.currentBlock.Read(p)
-	if n == 0 {
-		rb.currentBlock = nil
-		err = rb.generateNewBlock()
-		if err != nil {
-			return 0, err
-		}
-		n, err = rb.currentBlock.Read(p)
-		if err != nil && n == 0 {
-			panic("unexpected read error from fresh block")
-		}
-		return n, nil
-	}
-	return n, nil
-}
-
-func (rb *RandomBitstream) generateNewBlock() (err error) {
-	if rb.counter == 0xffffffffffffffff {
-		return io.EOF
-	}
-	rb.counter = rb.counter + 1
-	buf := make([]byte, rb.blockcipher.BlockSize())
-	binary.LittleEndian.PutUint64(buf[:8], rb.counter)
-	binary.LittleEndian.PutUint64(buf[8:16], rb.iv)
-	rb.blockcipher.Encrypt(buf, buf)
-	rb.currentBlock = bytes.NewReader(buf)
-	return nil
-}
-
-type DeterministicDealer struct {
-	bitstream io.Reader
-}
-
-type Dealer interface {
-	DrawCards(cards []Card, ncards uint8) (remainingCards []Card, drawnCards []Card, err error)
 }
 
 func getModfactorFromMax(nmax uint8) uint8 {
@@ -122,39 +83,90 @@ func PullUint8FromBytesExact(r io.Reader, nmax uint8) (uint8, error) {
 	}
 }
 
-func NewDealer(seed []byte) (Dealer, error) {
-	var bitstream io.Reader
-	bitstream, err := SeededBitstream(seed)
-	if err != nil {
-		return nil, err
+// Shuffle an array in-place
+//
+// Currently, only up to 255 items are supported.
+func Shuffle(r io.Reader, data *CardSet) error {
+	if len(*data) > 256 {
+		return ErrTooManyItems
 	}
-	return &DeterministicDealer{bitstream}, nil
+
+	nitems := uint8(len(*data))
+
+	for i_ := range *data {
+		i := uint8(i_)
+		remaining := nitems - i
+		chosen, err := PullUint8FromBytesExact(r, remaining-1)
+		if err != nil {
+			return err
+		}
+		buf := (*data)[i]
+		(*data)[i] = (*data)[chosen]
+		(*data)[chosen] = buf
+	}
+
+	return nil
 }
 
-func (d *DeterministicDealer) DrawCards(cards []Card, ncards uint8) (remainingCards []Card, drawnCards []Card, err error) {
-	if len(cards) > 255 {
-		panic("too many cards in deck")
+// Shuffle a deck of cards with an arbitrarily-sized seed
+//
+// Note: To ensure that the cards are shuffled with all fairness, the seed
+// should contain at least 120 bits of entropy, the more the better.
+func ShuffleDeckWithSeed(seed []byte, data *CardSet) error {
+	hashedSeed := sha512.Sum512(seed)
+	bitstream1, err := SeededBitstream(hashedSeed[:32])
+	if err != nil {
+		return err
+	}
+	bitstream2, err := SeededBitstream(hashedSeed[32:])
+	if err != nil {
+		return err
 	}
 
-	navailable := uint8(len(cards))
-	if navailable < ncards {
+	// Why two shuffles with two different bitstreams? The reason is that
+	// AES-128, which is used to back the stream cipher for the csprng, may
+	// not be able to generate all hands. This may be my lack of
+	// understanding.
+	//
+	// Here is my reasoning:
+	// - A deck of 32 cards can be shuffled in 32! (factorial) ways.
+	// - The entropy "contained" in a shuffle is log2(32!) which is
+	//   approximately 118 bits
+	// - The AES-128 key length is 128 bits
+	// - The AES-128 security margin is probably around 100 bits, depending on
+	//   the exact scenario and which attacks are possible.
+	//
+	// Given all this, it is possible that AES-128 does not "transfer" the
+	// complete amount of entropy from its key to its output stream. Even if
+	// it does, a margin of 10 bits (2^10 = 1024) is not a lot to ensure that
+	// the shuffles are unbiased.
+	//
+	// By hashing the initial seed with SHA512, splitting the hash output in
+	// two halves and initializing two AES-128-based stream ciphers with those
+	// separate halves, I believe I am increasing the "bandwidth" of entropy
+	// (so to speak) from the seed to the shuffled deck and thus increasing
+	// the fairness of the shuffle.
+
+	// Shuffle shuffles the array data in-place using the random data sourced
+	// from the given io.Reader.
+	err = Shuffle(bitstream1, data)
+	if err != nil {
+		return err
+	}
+	err = Shuffle(bitstream2, data)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func DrawCards(deck CardSet, ncards int) (remainingCards CardSet, drawnCards CardSet, err error) {
+	if len(deck) < ncards {
 		return nil, nil, ErrNotEnoughCards
 	}
 
-	remainingCards = make([]Card, navailable-ncards)
-	drawnCards = make([]Card, ncards)
-
-	for i := uint8(0); i < ncards; i = i + 1 {
-		selectedIndex, err := PullUint8FromBytesExact(d.bitstream, navailable-1)
-		if err != nil {
-			return nil, nil, err
-		}
-		drawnCards[i] = cards[selectedIndex]
-		cards = append(cards[:selectedIndex], cards[selectedIndex+1:]...)
-		navailable = navailable - 1
-	}
-
-	copy(remainingCards, cards)
-
-	return remainingCards, drawnCards, err
+	remainingCards = deck[ncards:].Copy()
+	drawnCards = deck[:ncards].Copy()
+	return remainingCards, drawnCards, nil
 }

@@ -2,7 +2,6 @@ package skat
 
 import (
 	"bytes"
-	"crypto/rand"
 	"io"
 	"testing"
 
@@ -43,16 +42,10 @@ func TestPullUint8FromBytesExact(t *testing.T) {
 	})
 }
 
-func TestDeterministicDealerNonDeterministic(t *testing.T) {
-	seed := make([]byte, 32)
-	_, err := rand.Read(seed)
-	assert.Nil(t, err)
-
+func TestDrawCards(t *testing.T) {
 	t.Run("draws requested amount of cards", func(t *testing.T) {
 		deck := NewCardDeck()
-		d, err := NewDealer(seed)
-		assert.Nil(t, err)
-		remaining, drawn, err := d.DrawCards(deck, 3)
+		remaining, drawn, err := DrawCards(deck, 3)
 		assert.Nil(t, err)
 		assert.Equal(t, 29, len(remaining))
 		assert.Equal(t, 3, len(drawn))
@@ -60,9 +53,8 @@ func TestDeterministicDealerNonDeterministic(t *testing.T) {
 
 	t.Run("drawn and remaining are distinct", func(t *testing.T) {
 		deck := NewCardDeck()
-		d, err := NewDealer(seed)
+		remaining, drawn, err := DrawCards(deck, 16)
 		assert.Nil(t, err)
-		remaining, drawn, err := d.DrawCards(deck, 16)
 		assert.Equal(t, 16, len(remaining))
 		assert.Equal(t, 16, len(drawn))
 		for _, remainingCard := range remaining {
@@ -74,9 +66,8 @@ func TestDeterministicDealerNonDeterministic(t *testing.T) {
 
 	t.Run("no duplicate draws", func(t *testing.T) {
 		deck := NewCardDeck()
-		d, err := NewDealer(seed)
+		remaining, drawn, err := DrawCards(deck, 16)
 		assert.Nil(t, err)
-		remaining, drawn, err := d.DrawCards(deck, 16)
 		assert.Equal(t, 16, len(remaining))
 		assert.Equal(t, 16, len(drawn))
 		for i, drawnCard1 := range drawn {
@@ -87,64 +78,85 @@ func TestDeterministicDealerNonDeterministic(t *testing.T) {
 	})
 }
 
-func TestDeterministicDealerDeterministic(t *testing.T) {
+func TestShuffleDeckWithSeed(t *testing.T) {
 	seed := []byte{23, 42}
 
 	t.Run("deal a full hand", func(t *testing.T) {
 		deck := NewCardDeck()
-		d, err := NewDealer(seed)
+		err := ShuffleDeckWithSeed(seed, &deck)
 		assert.Nil(t, err)
 		var drawn []Card
 
-		deck, drawn, err = d.DrawCards(deck, 3)
+		deck, drawn, err = DrawCards(deck, 3)
 		assert.Nil(t, err)
 		assert.Equal(t, 29, len(deck))
-		assert.Equal(t, Card{Card10, SuitClubs}, drawn[0])
-		assert.Equal(t, Card{CardAce, SuitDiamonds}, drawn[1])
+		assert.Equal(t, Card{Card8, SuitDiamonds}, drawn[0])
+		assert.Equal(t, Card{CardKing, SuitClubs}, drawn[1])
 		assert.Equal(t, Card{CardQueen, SuitHearts}, drawn[2])
 
-		deck, drawn, err = d.DrawCards(deck, 3)
+		deck, drawn, err = DrawCards(deck, 3)
 		assert.Nil(t, err)
 		assert.Equal(t, 26, len(deck))
-		assert.Equal(t, Card{Card7, SuitDiamonds}, drawn[0])
+		assert.Equal(t, Card{Card7, SuitClubs}, drawn[0])
 		assert.Equal(t, Card{Card8, SuitClubs}, drawn[1])
-		assert.Equal(t, Card{CardQueen, SuitClubs}, drawn[2])
+		assert.Equal(t, Card{Card9, SuitHearts}, drawn[2])
 
-		deck, drawn, err = d.DrawCards(deck, 3)
+		deck, drawn, err = DrawCards(deck, 3)
 		assert.Nil(t, err)
 		assert.Equal(t, 23, len(deck))
-		assert.Equal(t, Card{Card8, SuitHearts}, drawn[0])
-		assert.Equal(t, Card{Card9, SuitSpades}, drawn[1])
-		assert.Equal(t, Card{Card8, SuitSpades}, drawn[2])
+		assert.Equal(t, Card{Card7, SuitDiamonds}, drawn[0])
+		assert.Equal(t, Card{CardAce, SuitDiamonds}, drawn[1])
+		assert.Equal(t, Card{CardJack, SuitSpades}, drawn[2])
 
-		deck, drawn, err = d.DrawCards(deck, 2)
+		deck, drawn, err = DrawCards(deck, 2)
 		assert.Nil(t, err)
 		assert.Equal(t, 21, len(deck))
-		assert.Equal(t, Card{CardKing, SuitDiamonds}, drawn[0])
-		assert.Equal(t, Card{CardAce, SuitHearts}, drawn[1])
+		assert.Equal(t, Card{CardKing, SuitHearts}, drawn[0])
+		assert.Equal(t, Card{CardKing, SuitSpades}, drawn[1])
 
-		deck, drawn, err = d.DrawCards(deck, 4)
+		deck, drawn, err = DrawCards(deck, 4)
 		assert.Nil(t, err)
 		assert.Equal(t, 17, len(deck))
-		assert.Equal(t, Card{Card7, SuitHearts}, drawn[0])
-		assert.Equal(t, Card{Card10, SuitHearts}, drawn[1])
-		assert.Equal(t, Card{CardJack, SuitSpades}, drawn[2])
-		assert.Equal(t, Card{CardKing, SuitClubs}, drawn[3])
+		assert.Equal(t, Card{Card10, SuitClubs}, drawn[0])
+		assert.Equal(t, Card{CardQueen, SuitClubs}, drawn[1])
+		assert.Equal(t, Card{Card7, SuitSpades}, drawn[2])
+		assert.Equal(t, Card{CardQueen, SuitSpades}, drawn[3])
 
-		deck, drawn, err = d.DrawCards(deck, 4)
+		deck, drawn, err = DrawCards(deck, 4)
 		assert.Nil(t, err)
 		assert.Equal(t, 13, len(deck))
-		assert.Equal(t, Card{CardAce, SuitSpades}, drawn[0])
-		assert.Equal(t, Card{Card10, SuitDiamonds}, drawn[1])
-		assert.Equal(t, Card{CardJack, SuitClubs}, drawn[2])
-		assert.Equal(t, Card{CardJack, SuitDiamonds}, drawn[3])
+		assert.Equal(t, Card{CardJack, SuitClubs}, drawn[0])
+		assert.Equal(t, Card{Card8, SuitHearts}, drawn[1])
+		assert.Equal(t, Card{CardAce, SuitClubs}, drawn[2])
+		assert.Equal(t, Card{Card10, SuitSpades}, drawn[3])
 
-		deck, drawn, err = d.DrawCards(deck, 4)
+		deck, drawn, err = DrawCards(deck, 4)
 		assert.Nil(t, err)
 		assert.Equal(t, 9, len(deck))
-		assert.Equal(t, Card{Card9, SuitDiamonds}, drawn[0])
-		assert.Equal(t, Card{Card7, SuitClubs}, drawn[1])
+		assert.Equal(t, Card{Card7, SuitHearts}, drawn[0])
+		assert.Equal(t, Card{Card10, SuitDiamonds}, drawn[1])
+		assert.Equal(t, Card{CardJack, SuitDiamonds}, drawn[2])
+		assert.Equal(t, Card{CardQueen, SuitDiamonds}, drawn[3])
+
+		deck, drawn, err = DrawCards(deck, 3)
+		assert.Nil(t, err)
+		assert.Equal(t, 6, len(deck))
+		assert.Equal(t, Card{Card10, SuitHearts}, drawn[0])
+		assert.Equal(t, Card{CardAce, SuitHearts}, drawn[1])
 		assert.Equal(t, Card{CardJack, SuitHearts}, drawn[2])
-		assert.Equal(t, Card{CardKing, SuitSpades}, drawn[3])
+
+		deck, drawn, err = DrawCards(deck, 3)
+		assert.Nil(t, err)
+		assert.Equal(t, 3, len(deck))
+		assert.Equal(t, Card{Card9, SuitSpades}, drawn[0])
+		assert.Equal(t, Card{CardAce, SuitSpades}, drawn[1])
+		assert.Equal(t, Card{Card8, SuitSpades}, drawn[2])
+
+		deck, drawn, err = DrawCards(deck, 3)
+		assert.Nil(t, err)
+		assert.Equal(t, 0, len(deck))
+		assert.Equal(t, Card{CardKing, SuitDiamonds}, drawn[0])
+		assert.Equal(t, Card{Card9, SuitDiamonds}, drawn[1])
+		assert.Equal(t, Card{Card9, SuitClubs}, drawn[2])
 	})
 }
