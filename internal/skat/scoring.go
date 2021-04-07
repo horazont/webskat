@@ -79,7 +79,7 @@ func (sd *ScoreDefinition) CalculateScore(gameValue int, declarer int, declarerW
 	declarerFormula := sd.DeclarerLoss
 	if declarerWon {
 		defenderFormula = sd.DefenderLoss
-		declarerFormula = sd.DeclarerLoss
+		declarerFormula = sd.DeclarerWin
 	}
 
 	result[declarer] = declarerFormula.Apply(gameValue)

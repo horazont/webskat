@@ -326,7 +326,7 @@ func TestGameStatePlayingPhaseCompleted(t *testing.T) {
 		assert.Equal(t, 12, len(g.GetHand(PlayerInitialMiddlehand)))
 		assert.Equal(t, 10, len(g.GetHand(PlayerInitialRearhand)))
 		assert.Equal(t, 0, g.GetScore(PlayerInitialForehand))
-		assert.Equal(t, -72, g.GetScore(PlayerInitialMiddlehand))
+		assert.Equal(t, 86, g.GetScore(PlayerInitialMiddlehand))
 		assert.Equal(t, 0, g.GetScore(PlayerInitialRearhand))
 		assert.Equal(t, "", g.GetLossReason())
 	})
