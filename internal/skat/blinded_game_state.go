@@ -5,6 +5,7 @@ type BlindedPlayerState struct {
 	SeedProvided  bool `json:"seedProvided"`
 	WonCardPoints int  `json:"wonPoints"`
 	AwardedScore  int  `json:"awardedScore"`
+	Seed          Seed `json:"seed"`
 }
 
 type BlindedBiddingState struct {
@@ -40,4 +41,5 @@ type BlindedGameState struct {
 	FinalModifiers GameModifier `json:"finalModifiers"`
 	FinalGameValue int          `json:"finalGameValue"`
 	JackStrength   int          `json:"jackStrength"`
+	DealerSeed     Seed         `json:"dealerSeed"`
 }

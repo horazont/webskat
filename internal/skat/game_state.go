@@ -491,7 +491,9 @@ func (g *GameState) BlindedForPlayer(player int) (result *BlindedGameState) {
 		for i := range result.Players {
 			result.Players[i].WonCardPoints = g.players[i].WonCards.Value()
 			result.Players[i].AwardedScore = g.players[i].Score
+			result.Players[i].Seed = g.players[i].Seed
 		}
+		result.DealerSeed = g.dealerSeed
 		result.FinalGameValue = g.finalGameValue
 		result.JackStrength = g.jackStrength
 	}
