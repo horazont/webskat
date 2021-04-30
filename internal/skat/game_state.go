@@ -1,7 +1,6 @@
 package skat
 
 import (
-	"crypto/rand"
 	"errors"
 )
 
@@ -47,9 +46,10 @@ const (
 )
 
 type CommonPlayerState struct {
-	Seed  []byte
-	Hand  CardSet
-	Score int
+	Seed     []byte
+	Hand     CardSet
+	WonCards CardSet
+	Score    int
 }
 
 type GameState struct {
@@ -67,58 +67,69 @@ type GameState struct {
 
 	biddingState *BiddingState
 	playingState *PlayingState
+
+	jackStrength   int
+	finalGameValue int
 }
 
-func NewGame(withDealer bool, scoring *ScoreDefinition) *GameState {
+func NewGame(withDealer bool, scoring *ScoreDefinition) (*GameState, error) {
+	seed, err := GenerateSeed()
+	if err != nil {
+		return nil, err
+	}
 	return &GameState{
 		withDealer:          withDealer,
 		phase:               PhaseInit,
 		dealerLookingAtHand: PlayerNone,
 		scoring:             *scoring,
 		modifiers:           GameModifierHand,
-	}
+		serverSeed:          seed,
+	}, nil
 }
 
 func (g *GameState) Phase() GamePhase {
 	return g.phase
 }
 
-func (g *GameState) SetSeed(player int, seed []byte) error {
+func (g *GameState) SetSeed(player int, seed Seed) error {
 	if g.phase != PhaseInit {
 		return ErrWrongPhase
 	}
 	g.players[player].Seed = seed
+	err := g.Deal()
+	if err != ErrMissingSeed {
+		return err
+	}
 	return nil
 }
 
-func (g *GameState) SetDealerSeed(seed []byte) error {
+func (g *GameState) SetDealerSeed(seed Seed) error {
 	if g.phase != PhaseInit {
 		return ErrWrongPhase
 	}
 	if g.withDealer {
 		g.dealerSeed = seed
 	}
+	err := g.Deal()
+	if err != ErrMissingSeed {
+		return err
+	}
 	return nil
 }
 
-func (g *GameState) GenerateServerSeed() error {
-	seed := make([]byte, ServerSeedSize)
-	_, err := rand.Read(seed)
-	if err != nil {
-		return err
-	}
-	return g.SetServerSeed(seed)
+func (g *GameState) ServerSeed() Seed {
+	return g.serverSeed
 }
 
-func (g *GameState) SetServerSeed(seed []byte) error {
+func (g *GameState) ForceServerSeed(seed Seed) error {
 	if g.phase != PhaseInit {
 		return ErrWrongPhase
 	}
-	if g.serverSeed != nil {
-		return ErrWrongPhase
-	}
 	g.serverSeed = seed
-
+	err := g.Deal()
+	if err != ErrMissingSeed {
+		return err
+	}
 	return nil
 }
 
@@ -201,11 +212,41 @@ func (g *GameState) initBidding() {
 	g.biddingState = NewBiddingState()
 }
 
-func (g *GameState) Bidding() *BiddingState {
+/* func (g *GameState) Bidding() *BiddingState {
 	if g.phase != PhaseBidding {
 		return nil
 	}
 	return g.biddingState
+} */
+
+func (g *GameState) CallBid(player int, value int) error {
+	if g.phase != PhaseBidding {
+		return ErrWrongPhase
+	}
+	err := g.biddingState.Call(player, value)
+	if err != nil {
+		return err
+	}
+	err = g.ConcludeBidding()
+	if err != ErrBiddingNotDone {
+		return err
+	}
+	return nil
+}
+
+func (g *GameState) RespondToBid(player int, hold bool) error {
+	if g.phase != PhaseBidding {
+		return ErrWrongPhase
+	}
+	err := g.biddingState.Respond(player, hold)
+	if err != nil {
+		return err
+	}
+	err = g.ConcludeBidding()
+	if err != ErrBiddingNotDone {
+		return err
+	}
+	return nil
 }
 
 // Transition PhaseBidding -> PhaseDeclaration
@@ -311,6 +352,20 @@ func (g *GameState) GetHand(player int) CardSet {
 	return g.players[player].Hand.Copy()
 }
 
+func (g *GameState) PlayCard(player int, card Card) error {
+	if g.phase != PhasePlaying {
+		return ErrWrongPhase
+	}
+	if err := g.playingState.Play(player, card); err != nil {
+		return err
+	}
+	err := g.EvaluateGame()
+	if err == ErrWrongPhase {
+		return nil
+	}
+	return err
+}
+
 func (g *GameState) GetSkat() CardSet {
 	return g.skat.Copy()
 }
@@ -335,32 +390,40 @@ func (g *GameState) EvaluateGame() error {
 	if g.phase != PhasePlaying {
 		return ErrWrongPhase
 	}
-	if len(g.playingState.GetHand(PlayerInitialForehand)) > 0 {
+	if len(g.playingState.GetHand(PlayerInitialForehand)) > 0 || len(g.playingState.GetHand(PlayerInitialMiddlehand)) > 0 || len(g.playingState.GetHand(PlayerInitialRearhand)) > 0 {
 		return ErrWrongPhase
 	}
 	declarer := g.biddingState.Declarer()
-	resultModifiers, declarerScore, _ := EvaluateWonCards(
+	for i := range g.players {
+		g.players[i].WonCards = g.playingState.GetWonCards(i)
+	}
+	resultModifiers, declarerCardPoints, _ := EvaluateWonCards(
 		[3]CardSet{
-			g.playingState.GetWonCards(PlayerInitialForehand),
-			g.playingState.GetWonCards(PlayerInitialMiddlehand),
-			g.playingState.GetWonCards(PlayerInitialRearhand),
+			g.players[0].WonCards,
+			g.players[1].WonCards,
+			g.players[2].WonCards,
 		},
 		declarer,
 	)
+	declarerHand := g.players[declarer].Hand.Copy()
+	g.jackStrength = declarerHand.GetMatadorsJackStrength(
+		g.playingState.GameType(),
+	)
 	modifiers := g.modifiers | resultModifiers
 	baseValue, factor := CalculateGameValue(
-		g.players[declarer].Hand,
+		declarerHand,
 		g.playingState.GameType(),
 		modifiers,
 	)
 	declarerWon, gameValue, lossReason := EvaluateGame(
 		baseValue,
 		factor,
-		declarerScore,
+		declarerCardPoints,
 		g.biddingState.CalledGameValue(),
 		g.playingState.GameType(),
 		modifiers,
 	)
+	g.finalGameValue = gameValue
 	playerScores := g.scoring.CalculateScore(
 		gameValue,
 		declarer,
@@ -373,4 +436,65 @@ func (g *GameState) EvaluateGame() error {
 	g.lossReason = lossReason
 	g.phase = PhaseScored
 	return nil
+}
+
+func (g *GameState) BlindedForPlayer(player int) (result *BlindedGameState) {
+	players := make([]BlindedPlayerState, 3)
+	for i := range players {
+		players[i].Ncards = len(g.GetHand(i))
+		players[i].SeedProvided = g.players[i].Seed != nil
+	}
+
+	skatCards := 2
+	if g.phase == PhaseDeclaration || g.phase == PhaseScored || g.phase == PhasePlaying {
+		if !g.modifiers.Test(GameModifierHand) {
+			skatCards = 0
+		}
+	}
+
+	result = &BlindedGameState{
+		Phase:      g.phase,
+		Players:    players,
+		Hand:       g.GetHand(player),
+		SkatCards:  skatCards,
+		ServerSeed: g.serverSeed,
+	}
+
+	if g.phase == PhaseBidding {
+		result.BiddingState = &BlindedBiddingState{
+			LastBid:          g.biddingState.LastBid(),
+			Caller:           g.biddingState.Caller(),
+			Responder:        g.biddingState.Responder(),
+			AwaitingResponse: g.biddingState.AwaitingResponse(),
+		}
+	}
+
+	if g.phase == PhaseDeclaration || g.phase == PhasePlaying || g.phase == PhaseScored {
+		result.Declarer = g.biddingState.Declarer()
+		result.LastBiddingCall = g.biddingState.LastBid()
+	}
+
+	if g.phase == PhasePlaying || g.phase == PhaseScored {
+		result.AnnouncedModifiers = g.modifiers & (AnnouncementModifiers | GameModifierHand)
+	}
+
+	if g.phase == PhasePlaying {
+		result.CurrentPlayer = g.playingState.GetCurrentPlayer()
+		result.Table = g.playingState.GetTable()
+		result.GameType = g.playingState.GameType()
+		result.AnnouncedModifiers = g.modifiers
+	}
+
+	if g.phase == PhaseScored {
+		result.LossReason = g.lossReason
+		result.FinalModifiers = g.modifiers
+		for i := range result.Players {
+			result.Players[i].WonCardPoints = g.players[i].WonCards.Value()
+			result.Players[i].AwardedScore = g.players[i].Score
+		}
+		result.FinalGameValue = g.finalGameValue
+		result.JackStrength = g.jackStrength
+	}
+
+	return result
 }

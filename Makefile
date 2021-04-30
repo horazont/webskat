@@ -1,7 +1,8 @@
 all: fmt vet test build
 
 build:
-	go build -trimpath ./cmd/webskat-server/webskat-server.go
+	go build -trimpath ./cmd/skat-server/skat-server.go
+	go build -trimpath ./cmd/skat-client/skat-client.go
 
 fmt:
 	go fmt ./...

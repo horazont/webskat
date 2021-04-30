@@ -7,29 +7,27 @@ import (
 )
 
 func testGetInitPhaseGame(t *testing.T) *GameState {
-	g := NewGame(false, LeagueScoreDefinition())
+	g, err := NewGame(false, LeagueScoreDefinition())
+	assert.Nil(t, err)
 	assert.Equal(t, PhaseInit, g.Phase())
 	return g
 }
 
 func testGetBiddingPhaseGame(t *testing.T) *GameState {
 	g := testGetInitPhaseGame(t)
+	assert.Nil(t, g.ForceServerSeed([]byte{}))
 	assert.Nil(t, g.SetSeed(PlayerInitialForehand, []byte{}))
 	assert.Nil(t, g.SetSeed(PlayerInitialMiddlehand, []byte{}))
 	assert.Nil(t, g.SetSeed(PlayerInitialRearhand, []byte{}))
-	assert.Nil(t, g.SetServerSeed([]byte{}))
-	assert.Nil(t, g.Deal())
 	assert.Equal(t, PhaseBidding, g.Phase())
 	return g
 }
 
 func testGetDeclarationPhaseGame(t *testing.T) *GameState {
 	g := testGetBiddingPhaseGame(t)
-	assert.Nil(t, g.Bidding().Call(PlayerInitialMiddlehand, 18))
-	assert.Nil(t, g.Bidding().Respond(PlayerInitialForehand, false))
-	assert.Nil(t, g.Bidding().Call(PlayerInitialRearhand, BidPass))
-	assert.True(t, g.Bidding().Done())
-	assert.Nil(t, g.ConcludeBidding())
+	assert.Nil(t, g.CallBid(PlayerInitialMiddlehand, 18))
+	assert.Nil(t, g.RespondToBid(PlayerInitialForehand, false))
+	assert.Nil(t, g.CallBid(PlayerInitialRearhand, BidPass))
 	assert.Equal(t, PhaseDeclaration, g.Phase())
 	return g
 }
@@ -87,14 +85,6 @@ func TestGameStateInitialPhase(t *testing.T) {
 		assert.Equal(t, ErrMissingSeed, err)
 
 		g.SetSeed(PlayerInitialRearhand, []byte{})
-
-		err = g.Deal()
-		assert.Equal(t, ErrMissingSeed, err)
-
-		g.SetServerSeed([]byte{})
-
-		err = g.Deal()
-		assert.Nil(t, err)
 	})
 
 	t.Run("reject transition to declaration phase", func(t *testing.T) {
@@ -113,12 +103,6 @@ func TestGameStateBiddingPhase(t *testing.T) {
 		assert.Equal(t, 2, len(g.GetSkat()))
 	})
 
-	t.Run("bidding is initialized", func(t *testing.T) {
-		g := testGetBiddingPhaseGame(t)
-
-		assert.NotNil(t, g.Bidding())
-	})
-
 	t.Run("reject transition to declaration phase if bidding not done", func(t *testing.T) {
 		g := testGetBiddingPhaseGame(t)
 
@@ -135,7 +119,6 @@ func TestGameStateBiddingPhase(t *testing.T) {
 		g := testGetBiddingPhaseGame(t)
 
 		assert.Equal(t, ErrWrongPhase, g.SetSeed(PlayerInitialForehand, []byte{}))
-		assert.Equal(t, ErrWrongPhase, g.SetServerSeed([]byte{}))
 	})
 
 	t.Run("reject declare", func(t *testing.T) {
@@ -147,12 +130,9 @@ func TestGameStateBiddingPhase(t *testing.T) {
 	t.Run("transition to declaration phase when bidding is concluded", func(t *testing.T) {
 		g := testGetBiddingPhaseGame(t)
 
-		assert.Nil(t, g.Bidding().Call(PlayerInitialMiddlehand, 18))
-		assert.Nil(t, g.Bidding().Respond(PlayerInitialForehand, false))
-		assert.Nil(t, g.Bidding().Call(PlayerInitialRearhand, BidPass))
-		assert.True(t, g.Bidding().Done())
-
-		assert.Nil(t, g.ConcludeBidding())
+		assert.Nil(t, g.CallBid(PlayerInitialMiddlehand, 18))
+		assert.Nil(t, g.RespondToBid(PlayerInitialForehand, false))
+		assert.Nil(t, g.CallBid(PlayerInitialRearhand, BidPass))
 		assert.Equal(t, PhaseDeclaration, g.Phase())
 	})
 }

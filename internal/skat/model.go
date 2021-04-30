@@ -1,6 +1,8 @@
 package skat
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"strings"
 )
@@ -13,6 +15,7 @@ var (
 )
 
 const (
+	InvalidGameType  GameType = 0
 	GameTypeDiamonds GameType = 1
 	GameTypeHearts   GameType = 2
 	GameTypeSpades   GameType = 3
@@ -21,6 +24,25 @@ const (
 	GameTypeNull     GameType = 6
 	GameTypeJunk     GameType = 7
 )
+
+func (t GameType) Pretty() string {
+	switch t {
+	case GameTypeDiamonds:
+		return "Diamonds"
+	case GameTypeHearts:
+		return "Hearts"
+	case GameTypeSpades:
+		return "Spades"
+	case GameTypeClubs:
+		return "Clubs"
+	case GameTypeGrand:
+		return "Grand"
+	case GameTypeNull:
+		return "Null"
+	default:
+		return ""
+	}
+}
 
 var (
 	StandardGameTypes = []GameType{GameTypeDiamonds, GameTypeHearts, GameTypeSpades, GameTypeClubs, GameTypeGrand, GameTypeNull}
@@ -41,6 +63,29 @@ const (
 	StateModifiers        GameModifier = GameModifierHand | GameModifierSchneider | GameModifierSchwarz
 	AnnouncementModifiers GameModifier = GameModifierSchneiderAnnounced | GameModifierSchwarzAnnounced | GameModifierOuvert
 )
+
+func (m GameModifier) Pretty() string {
+	parts := make([]string, 0)
+	if m.Test(GameModifierHand) {
+		parts = append(parts, "Hand")
+	}
+	if m.Test(GameModifierSchneider) {
+		parts = append(parts, "Schneider")
+	}
+	if m.Test(GameModifierSchwarz) {
+		parts = append(parts, "Schwarz")
+	}
+	if m.Test(GameModifierSchneiderAnnounced) {
+		parts = append(parts, "Schneider [announced]")
+	}
+	if m.Test(GameModifierSchwarzAnnounced) {
+		parts = append(parts, "Schwarz [announced]")
+	}
+	if m.Test(GameModifierOuvert) {
+		parts = append(parts, "Ouvert")
+	}
+	return strings.Join(parts, ", ")
+}
 
 type CardType int
 
@@ -120,7 +165,7 @@ func (c CardType) Pretty() string {
 	case Card9:
 		return "9"
 	case Card10:
-		return "0"
+		return "10"
 	case CardJack:
 		return "J"
 	case CardQueen:
@@ -381,4 +426,24 @@ func (cs CardSet) Pretty() string {
 		sb.WriteString(card.Pretty())
 	}
 	return sb.String()
+}
+
+type Seed []byte
+
+func (s *Seed) MarshalJSON() ([]byte, error) {
+	return json.Marshal(base64.StdEncoding.EncodeToString(*s))
+}
+
+func (s *Seed) UnmarshalJSON(data []byte) error {
+	var encoded string
+	err := json.Unmarshal(data, &encoded)
+	if err != nil {
+		return err
+	}
+	tmp, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return err
+	}
+	*s = tmp
+	return nil
 }

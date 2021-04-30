@@ -32,6 +32,7 @@ type BiddingState struct {
 	players          [3]BiddingPlayerState
 	declarer         int
 	awaitingResponse bool
+	lastBid          int
 }
 
 func NewBiddingState() *BiddingState {
@@ -43,6 +44,7 @@ func NewBiddingState() *BiddingState {
 		},
 		declarer:         PlayerNone,
 		awaitingResponse: false,
+		lastBid:          BidNone,
 	}
 }
 
@@ -142,6 +144,10 @@ func (b *BiddingState) CalledGameValue() int {
 	return b.players[b.declarer].LastBid
 }
 
+func (b *BiddingState) LastBid() int {
+	return b.lastBid
+}
+
 // Returns the declarer
 //
 // If Done() is false or if all players have passed without placing any bid,
@@ -166,6 +172,7 @@ func (b *BiddingState) Call(player int, value int) error {
 			return ErrBidTooLow
 		}
 		b.players[player].LastBid = value
+		b.lastBid = value
 		b.awaitingResponse = true
 	}
 	b.autoconclude()

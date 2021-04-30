@@ -3,6 +3,7 @@ package skat
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
 	"crypto/sha512"
 	"errors"
 	"io"
@@ -169,4 +170,13 @@ func DrawCards(deck CardSet, ncards int) (remainingCards CardSet, drawnCards Car
 	remainingCards = deck[ncards:].Copy()
 	drawnCards = deck[:ncards].Copy()
 	return remainingCards, drawnCards, nil
+}
+
+func GenerateSeed() ([]byte, error) {
+	seed := make([]byte, ServerSeedSize)
+	_, err := rand.Read(seed)
+	if err != nil {
+		return nil, err
+	}
+	return seed, nil
 }
