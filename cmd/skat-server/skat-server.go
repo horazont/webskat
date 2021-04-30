@@ -51,6 +51,8 @@ func main() {
 
 	sl := zap.S()
 
+	flag.Parse()
+
 	ns, err := singleuser.Listen(
 		*serverListenAddress,
 		&tls.Config{
